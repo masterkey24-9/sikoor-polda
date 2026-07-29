@@ -8,14 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 class Message extends Model
 {
     use HasFactory;
-}
 
-public function up(): void
-{
-    Schema::create('messages', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Pengirim
-        $table->text('pesan');
-        $table->timestamps();
-    });
+    // Kolom yang diizinkan untuk diisi secara massal
+    protected $fillable = ['user_id', 'pesan'];
+
+    // Relasi: Sebuah pesan dimiliki oleh satu user (bisa Admin atau Satker)
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
