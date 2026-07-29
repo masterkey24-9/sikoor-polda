@@ -1,8 +1,8 @@
 @php
     $menu = [
-        ['label' => 'Monitoring', 'icon' => 'ti-chart-bar', 'route' => 'admin.monitoring'],
-        ['label' => 'Upload dokumen', 'icon' => 'ti-upload', 'route' => 'admin.upload'],
-        ['label' => 'Live chat', 'icon' => 'ti-message-circle', 'route' => 'admin.chat'],
+        ['label' => 'Monitoring', 'icon' => 'ti-chart-bar', 'route' => 'dashboard'],
+        ['label' => 'Indicators & upload', 'icon' => 'ti-upload', 'route' => 'indicators.index'],
+        ['label' => 'Live chat', 'icon' => 'ti-message-circle', 'route' => 'messages.index'],
     ];
 @endphp
 
