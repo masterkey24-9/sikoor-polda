@@ -24,13 +24,13 @@ return new class extends Migration
             
             $table->rememberToken();
             $table->timestamps();
-        }); 
-    }       
+        });
+    }
 
     /**
      * Reverse the migrations.
      */
-    public function down(): void // <-- Ini baris 34 di error Anda
+    public function down(): void
     {
         Schema::dropIfExists('users');
     }
