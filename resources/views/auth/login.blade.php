@@ -1,47 +1,57 @@
-<x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+@extends('layouts.app')
 
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
+@section('title', 'Masuk')
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+@section('content')
+<div class="min-h-screen flex items-center justify-center bg-navy-950 px-4">
+    <div class="w-full max-w-sm">
+
+        <div class="flex flex-col items-center mb-8">
+            <div class="w-12 h-12 rounded-xl bg-gold-500 flex items-center justify-center text-navy-950 font-display font-bold text-xl mb-3">S</div>
+            <h1 class="font-display font-semibold text-xl text-white">Sikoor Polda Sumbar</h1>
+            <p class="text-slate-400 text-sm mt-1">Sistem koordinasi antar satuan kerja</p>
         </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
-            </label>
-        </div>
-
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
+        <div class="bg-white rounded-2xl p-7 shadow-xl">
+            @if ($errors->any())
+                <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+                    {{ $errors->first() }}
+                </div>
             @endif
 
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
+            <form method="POST" action="{{ route('login') }}" class="space-y-4">
+                @csrf
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                    <input type="email" id="email" name="email" required autofocus
+                           value="{{ old('email') }}"
+                           placeholder="nama@poldasumbar.go.id"
+                           class="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800 focus:border-navy-800">
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-700 mb-1.5">Kata sandi</label>
+                    <input type="password" id="password" name="password" required
+                           placeholder="Masukkan kata sandi"
+                           class="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800 focus:border-navy-800">
+                </div>
+
+                <label class="flex items-center gap-2 text-sm text-slate-500">
+                    <input type="checkbox" name="remember" class="rounded border-slate-300">
+                    Ingat saya
+                </label>
+
+                <button type="submit"
+                        class="w-full h-11 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium transition">
+                    Masuk
+                </button>
+            </form>
         </div>
-    </form>
-</x-guest-layout>
+
+        <p class="text-center text-slate-500 text-xs mt-6">
+            Akses khusus personel Polda Sumbar dan satuan kerja terdaftar.
+        </p>
+    </div>
+</div>
+@endsection
