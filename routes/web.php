@@ -12,7 +12,19 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('admin.monitoring');
+    if (auth()->user()->role === 'admin') {
+        $indicators = \App\Models\Indicator::with('satker')
+            ->latest()
+            ->get()
+            ->map(function ($item) {
+                $item->satker_nama = $item->satker->nama_satker ?? '-';
+                return $item;
+            });
+
+        return view('admin.monitoring', compact('indicators'));
+    }
+
+    return redirect()->route('user.inbox');
 })->middleware(['auth'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {

@@ -24,7 +24,12 @@ class IndicatorController extends Controller
             'satker_id' => 'required|exists:satkers,id'
         ]);
 
-        $indicator = Indicator::create($request->all());
+        $indicator = Indicator::create([
+            'judul' => $request->judul,
+            'deskripsi' => $request->deskripsi,
+            'tenggat_waktu' => $request->tenggat_waktu,
+            'satker_id' => $request->satker_id,
+        ]);
 
         return redirect()->back()->with(['status' => 'Indikator berhasil dibuat!', 'data' => $indicator]);
     }
