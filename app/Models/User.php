@@ -44,4 +44,12 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Relasi: seorang user (role satker) terhubung ke satu Satker.
+     */
+    public function satker()
+    {
+        return $this->belongsTo(Satker::class);
+    }
 }
