@@ -21,10 +21,11 @@ class IndicatorController extends Controller
             'judul' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
             'tenggat_waktu' => 'required|date',
+            'satker_id' => 'required|exists:satkers,id'
         ]);
 
         $indicator = Indicator::create($request->all());
 
-        return response()->json(['status' => 'Indikator berhasil dibuat!', 'data' => $indicator]);
+        return redirect()->back()->with(['status' => 'Indikator berhasil dibuat!', 'data' => $indicator]);
     }
 }
