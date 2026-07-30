@@ -30,6 +30,11 @@ class IndicatorResultController extends Controller
             'status' => 'dikirim'
         ]);
 
+        // Notifikasi ke semua admin bahwa ada dokumen baru masuk
+        $indicator = Indicator::find($indicator_id);
+        $satkerNama = $user->satker->nama_satker ?? 'Satker';
+        NotificationController::notifyNewDocument($satkerNama, $indicator->judul ?? '-');
+
         return redirect()->back()->with('success', 'Laporan berhasil dikirim.');
     }
 }
