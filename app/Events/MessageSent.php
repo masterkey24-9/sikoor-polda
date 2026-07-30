@@ -30,9 +30,10 @@ class MessageSent implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        // Kita gunakan public channel bernama 'chat' agar lebih mudah ditangkap Frontend
+        // Setiap Satker punya channel sendiri: 'chat.{satker_id}',
+        // supaya pesan hanya disiarkan ke thread yang relevan.
         return [
-            new Channel('chat'),
+            new Channel('chat.' . $this->message->satker_id),
         ];
     }
 
