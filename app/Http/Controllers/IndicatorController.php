@@ -11,7 +11,8 @@ class IndicatorController extends Controller
     public function index()
     {
         $indicators = Indicator::orderBy('created_at', 'desc')->get();
-        return view('indicators.index', compact('indicators'));
+        $satkers = \App\Models\Satker::all();
+        return view('indicators.index', compact('indicators', 'satkers'));
     }
 
     // Menyimpan indikator baru (Khusus Admin)
