@@ -103,6 +103,10 @@ class MessageController extends Controller
         // Event broadcast real-time (channel per-Satker: chat.{satker_id})
         event(new \App\Events\MessageSent($message));
 
+        // Buat notifikasi untuk lawan bicara (admin <-> satker terkait)
+        $satkerNama = Satker::find($satkerId)->nama_satker ?? 'Satker';
+        \App\Http\Controllers\NotificationController::notifyNewMessage($user, $satkerId, $satkerNama, $request->pesan);
+
         return response()->json(['status' => 'Pesan terkirim!', 'message' => $message->load('user:id,name,role')]);
     }
 }
