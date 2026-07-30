@@ -53,9 +53,25 @@
                     <option value="">Pilih satker...</option>
                     {{-- Data satker dari backend --}}
                     @foreach ($satkers ?? [
-                        (object)['id' => 1, 'nama_satker' => 'Polres Padang'],
-                        (object)['id' => 2, 'nama_satker' => 'Polres Bukittinggi'],
+                        (object)['id' => 1, 'nama_satker' => 'Polresta Padang'],
+                        (object)['id' => 2, 'nama_satker' => 'Polresta Bukittinggi'],
                         (object)['id' => 3, 'nama_satker' => 'Polres Payakumbuh'],
+                        (object)['id' => 4, 'nama_satker' => 'Polres Agam'],
+                        (object)['id' => 5, 'nama_satker' => 'Polres Solok'],
+                        (object)['id' => 6, 'nama_satker' => 'Polres Tanah Datar'],
+                        (object)['id' => 7, 'nama_satker' => 'Polres Lima Puluh Kota'],
+                        (object)['id' => 8, 'nama_satker' => 'Polres Sijunjung'],
+                        (object)['id' => 9, 'nama_satker' => 'Polres Dharmasraya'],
+                        (object)['id' => 10, 'nama_satker' => 'Polres Pasaman'],
+                        (object)['id' => 11, 'nama_satker' => 'Polres Pasaman Barat'],
+                        (object)['id' => 12, 'nama_satker' => 'Polres Solok Selatan'],
+                        (object)['id' => 13, 'nama_satker' => 'Polres Pesisir Selatan'],
+                        (object)['id' => 14, 'nama_satker' => 'Polres Kepulauan Mentawai'],
+                        (object)['id' => 15, 'nama_satker' => 'Polres Padang Pariaman'],
+                        (object)['id' => 16, 'nama_satker' => 'Polres Pariaman'],
+                        (object)['id' => 17, 'nama_satker' => 'Polres Sawahlunto'],
+                        (object)['id' => 18, 'nama_satker' => 'Polres Sijunjung'],
+                        (object)['id' => 19, 'nama_satker' => 'Polres padang panjang'],
                     ] as $satker)
                         <option value="{{ $satker->id }}">{{ $satker->nama_satker }}</option>
                     @endforeach
