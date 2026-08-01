@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 
 class IndicatorController extends Controller
 {
-    // Menampilkan daftar semua indikator (untuk Admin dan Satker)
     public function index()
     {
         $indicators = Indicator::orderBy('created_at', 'desc')->get();
@@ -15,7 +14,6 @@ class IndicatorController extends Controller
         return view('indicators.index', compact('indicators', 'satkers'));
     }
 
-    // Menyimpan indikator baru (Khusus Admin)
     public function store(Request $request)
     {
         $request->validate([
@@ -33,5 +31,12 @@ class IndicatorController extends Controller
         ]);
 
         return redirect()->back()->with(['status' => 'Indikator berhasil dibuat!', 'data' => $indicator]);
+    }
+
+    // BARU
+    public function show($id)
+    {
+        $indicator = Indicator::with(['satker', 'results.satker'])->findOrFail($id);
+        return view('indicators.show', compact('indicator'));
     }
 }

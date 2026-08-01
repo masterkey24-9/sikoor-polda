@@ -12,4 +12,9 @@ class Indicator extends Model
     {
         return $this->belongsTo(Satker::class);
     }
+
+    public function results()
+    {
+        return $this->hasMany(IndicatorResult::class);
+    }
 }

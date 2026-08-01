@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'admin@polda.go.id'],
             [
                 'name' => 'Admin Polda',
-                'password' => bcrypt('password123'),
+                'password' => 'admin123',
                 'role' => 'admin',
                 'satker_id' => null,
             ]
@@ -60,7 +60,7 @@ class DatabaseSeeder extends Seeder
                 ['email' => $slug . '@polda.go.id'],
                 [
                     'name' => $satker->nama_satker,
-                    'password' => bcrypt('password123'),
+                    'password' =>'rahasia123',
                     'role' => 'satker',
                     'satker_id' => $satker->id,
                 ]

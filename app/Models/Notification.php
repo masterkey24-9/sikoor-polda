@@ -9,13 +9,19 @@ class Notification extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'type', 'title', 'body', 'link'];
+    protected $fillable = [
+        'user_id',
+        'type',
+        'title',
+        'body',
+        'link',
+        'read_at',
+    ];
 
     protected $casts = [
         'read_at' => 'datetime',
     ];
 
-    // Relasi: notifikasi ini ditujukan untuk siapa
     public function user()
     {
         return $this->belongsTo(User::class);

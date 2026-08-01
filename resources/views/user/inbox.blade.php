@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Dokumen masuk')
-@section('page-title', 'Dokumen masuk')
+@section('title', 'Tugas & Laporan')
+@section('page-title', 'Tugas & laporan')
 
 @section('sidebar')
     @include('components.sidebar-user')
@@ -9,31 +9,73 @@
 
 @section('content')
 
-<div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
-    {{-- Ganti dengan @foreach($dokumen as $d) dari controller --}}
-    @foreach ([
-        ['nama' => 'Surat Perintah Tugas 08.pdf', 'dari' => 'Admin Polda Sumbar', 'tanggal' => '27 Jul 2026', 'baru' => true],
-        ['nama' => 'Laporan Operasi Ketupat.pdf', 'dari' => 'Admin Polda Sumbar', 'tanggal' => '25 Jul 2026', 'baru' => false],
-        ['nama' => 'Instruksi Pengamanan.pdf', 'dari' => 'Admin Polda Sumbar', 'tanggal' => '22 Jul 2026', 'baru' => false],
-    ] as $d)
-        <div class="flex items-center gap-4 px-5 py-4">
-            <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
-                <i class="ti ti-file-type-pdf text-red-500 text-xl"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-slate-800 truncate flex items-center gap-2">
-                    {{ $d['nama'] }}
-                    @if ($d['baru'])
-                        <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gold-500/15 text-gold-500">Baru</span>
-                    @endif
-                </p>
-                <p class="text-xs text-slate-400 mt-0.5">{{ $d['dari'] }} &middot; {{ $d['tanggal'] }}</p>
-            </div>
-            <a href="#" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 shrink-0" aria-label="Unduh {{ $d['nama'] }}">
-                <i class="ti ti-download text-lg"></i>
-            </a>
+    @if (session('success'))
+        <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3">
+            {{ session('success') }}
         </div>
-    @endforeach
-</div>
+    @endif
+    @if (session('error'))
+        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+            {{ session('error') }}
+        </div>
+    @endif
+    @if ($errors->any())
+        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
+    <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 max-w-xl">
+        @forelse ($indicators ?? [] as $indicator)
+            <div>
+                <button type="button"
+                        onclick="document.getElementById('form-{{ $indicator->id }}').classList.toggle('hidden')"
+                        class="w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-slate-50">
+                    <i class="ti ti-clipboard-list text-slate-400 text-lg shrink-0 mt-0.5"></i>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-slate-800">{{ $indicator->judul }}</p>
+                        @if ($indicator->deskripsi)
+                            <p class="text-xs text-slate-400 mt-0.5">{{ $indicator->deskripsi }}</p>
+                        @endif
+                        <p class="text-xs text-slate-400 mt-1">
+                            Tenggat: {{ \Carbon\Carbon::parse($indicator->tenggat_waktu)->translatedFormat('d M Y') }}
+                        </p>
+                    </div>
+
+                    @if ($indicator->results && $indicator->results->count() > 0)
+                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 shrink-0">
+                            <i class="ti ti-check text-sm"></i> Terkirim
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 shrink-0">
+                            <i class="ti ti-clock text-sm"></i> Belum diunggah
+                        </span>
+                    @endif
+                </button>
+
+                {{-- Form upload laporan, field sesuai IndicatorResultController@store --}}
+                <div id="form-{{ $indicator->id }}" class="hidden px-5 pb-5">
+                    <form method="POST" action="{{ route('indicator.upload', $indicator->id) }}"
+                          enctype="multipart/form-data" class="bg-slate-50 rounded-lg p-4 space-y-3">
+                        @csrf
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1.5">File PDF laporan</label>
+                            <input type="file" name="file_pdf" accept="application/pdf" required
+                                   class="w-full text-sm file:mr-3 file:h-9 file:px-3 file:rounded-lg file:border-0 file:bg-navy-900 file:text-white file:text-sm">
+                            <p class="text-xs text-slate-400 mt-1">Maksimal 5MB, format PDF.</p>
+                        </div>
+
+                        <button type="submit"
+                                class="h-10 px-4 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium">
+                            Kirim laporan
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @empty
+            <p class="px-5 py-6 text-sm text-slate-400 text-center">Belum ada tugas yang ditugaskan.</p>
+        @endforelse
+    </div>
 
 @endsection

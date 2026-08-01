@@ -58,7 +58,8 @@
             </thead>
             <tbody id="tableBody">
                 @forelse ($list as $item)
-                    <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50 row-item"
+                    <tr onclick="window.location='{{ route('indicators.show', $item->id) }}'"
+                        class="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer row-item"
                         data-search="{{ strtolower($item->judul . ' ' . ($item->satker_nama ?? '')) }}">
                         <td class="px-5 py-3.5 flex items-center gap-2.5">
                             <i class="ti ti-file-type-pdf text-red-500 text-lg"></i>
