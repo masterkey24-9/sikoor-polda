@@ -99,7 +99,7 @@ class NotificationController extends Controller
     foreach ($recipients as $recipient) {
         Notification::create([
             'user_id' => $recipient->id,
-            'type' => 'indicator',
+            'type' => 'document',
             'title' => 'Tugas baru diterima',
             'body' => "Anda mendapat tugas baru: {$indicator->judul}",
             'link' => route('user.inbox'),
