@@ -29,11 +29,11 @@ class IndicatorController extends Controller
             'tenggat_waktu' => $request->tenggat_waktu,
             'satker_id' => $request->satker_id,
         ]);
-
+        NotificationController::notifyNewIndicator($indicator);
         return redirect()->back()->with(['status' => 'Indikator berhasil dibuat!', 'data' => $indicator]);
     }
 
-    // BARU
+    
     public function show($id)
     {
         $indicator = Indicator::with(['satker', 'results.satker'])->findOrFail($id);

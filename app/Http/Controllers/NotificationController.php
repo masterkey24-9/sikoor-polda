@@ -5,13 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use app\Models\Indicator;
 
 class NotificationController extends Controller
 {
-    /**
-     * Mengambil daftar notifikasi milik user yang sedang login + jumlah belum dibaca.
-     * Dipanggil berulang (polling) oleh JS di topbar.
-     */
+    
     public function data()
     {
         $userId = Auth::id();
@@ -31,9 +29,7 @@ class NotificationController extends Controller
         ]);
     }
 
-    /**
-     * Menandai satu notifikasi sebagai sudah dibaca (dipanggil saat notifikasi diklik).
-     */
+
     public function markRead($id)
     {
         $notification = Notification::where('user_id', Auth::id())->findOrFail($id);
@@ -45,9 +41,7 @@ class NotificationController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
-    /**
-     * Menandai semua notifikasi milik user sebagai sudah dibaca.
-     */
+  
     public function markAllRead()
     {
         Notification::where('user_id', Auth::id())
@@ -57,12 +51,7 @@ class NotificationController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
-    /**
-     * Helper: buat notifikasi pesan chat baru untuk "lawan bicara" dari $sender.
-     *
-     * - Kalau pengirim admin  -> notifikasi dikirim ke semua user Satker terkait.
-     * - Kalau pengirim satker -> notifikasi dikirim ke semua user ber-role admin.
-     */
+    
     public static function notifyNewMessage(User $sender, int $satkerId, string $satkerNama, string $pesan): void
     {
         if ($sender->role === 'admin') {
@@ -86,10 +75,7 @@ class NotificationController extends Controller
         }
     }
 
-    /**
-     * Helper: buat notifikasi dokumen baru untuk semua admin, dipanggil saat
-     * Satker mengunggah laporan (IndicatorResult) baru.
-     */
+
     public static function notifyNewDocument(string $satkerNama, string $judulIndikator): void
     {
         $admins = User::where('role', 'admin')->get();
@@ -104,4 +90,20 @@ class NotificationController extends Controller
             ]);
         }
     }
+    public static function notifyNewIndicator(Indicator $indicator): void
+{
+    $recipients = User::where('satker_id', $indicator->satker_id)
+        ->where('role', 'satker')
+        ->get();
+
+    foreach ($recipients as $recipient) {
+        Notification::create([
+            'user_id' => $recipient->id,
+            'type' => 'indicator',
+            'title' => 'Tugas baru diterima',
+            'body' => "Anda mendapat tugas baru: {$indicator->judul}",
+            'link' => route('user.inbox'),
+        ]);
+    }
+}
 }

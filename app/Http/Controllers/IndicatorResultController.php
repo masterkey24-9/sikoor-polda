@@ -5,7 +5,6 @@ use App\Models\Indicator;
 use App\Models\IndicatorResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class IndicatorResultController extends Controller
 {
@@ -30,10 +29,9 @@ class IndicatorResultController extends Controller
             'status' => 'dikirim'
         ]);
 
-        // Notifikasi ke semua admin bahwa ada dokumen baru masuk
+        // BARU — kirim notifikasi ke semua admin
         $indicator = Indicator::find($indicator_id);
-        $satkerNama = $user->satker->nama_satker ?? 'Satker';
-        NotificationController::notifyNewDocument($satkerNama, $indicator->judul ?? '-');
+        NotificationController::notifyNewDocument($user->name, $indicator->judul ?? 'indikator');
 
         return redirect()->back()->with('success', 'Laporan berhasil dikirim.');
     }
