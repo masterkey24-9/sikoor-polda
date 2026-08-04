@@ -24,7 +24,7 @@
     <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6 max-w-xl">
         <p class="text-sm font-medium text-slate-700 mb-4">Buat indicator baru</p>
 
-        <form method="POST" action="{{ route('indicators.store') }}" enctype="multipart/form-data" class="space-y-4">
+        <form method="POST" action="{{ route('indicators.store') }}" enctype="multipart/form-data" class="space-y-4" id="indicatorForm">
             @csrf
 
             <div>
@@ -55,20 +55,77 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Kirim ke satker (bisa pilih lebih dari satu)</label>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-sm font-medium text-slate-700">Kirim ke satker</label>
+                    <label class="flex items-center gap-2 text-xs text-navy-800 cursor-pointer font-medium">
+                        <input type="checkbox" id="selectAllSatker"
+                               class="w-4 h-4 rounded border-slate-300 text-navy-800 focus:ring-navy-800">
+                        Pilih semua satker
+                    </label>
+                </div>
                 <div class="border border-slate-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
-                    @foreach ($satkers ?? [] as $satker)
+                    @forelse ($satkers ?? [] as $satker)
                         <label class="flex items-center gap-2.5 text-sm text-slate-700 cursor-pointer">
                             <input type="checkbox" name="satker_id[]" value="{{ $satker->id }}"
-                                   class="w-4 h-4 rounded border-slate-300 text-navy-800 focus:ring-navy-800">
+                                   class="satker-checkbox w-4 h-4 rounded border-slate-300 text-navy-800 focus:ring-navy-800">
                             {{ $satker->nama_satker }}
                         </label>
-                    @endforeach
+                    @empty
+                        <p class="text-sm text-slate-400">Belum ada satker terdaftar.</p>
+                    @endforelse
                 </div>
-                <p class="text-xs text-slate-400 mt-1">Pilih minimal 1 satker tujuan.</p>
+                <p class="text-xs text-slate-400 mt-1">Pilih minimal 1 satker tujuan, atau centang "Pilih semua satker".</p>
             </div>
 
             <button type="submit"
                     class="h-11 px-5 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium transition">
                 Buat & kirim indicator
             </button>
+        </form>
+    </div>
+
+    {{-- Daftar indicator yang sudah dibuat (pantauan status) --}}
+    <p class="text-sm font-medium text-slate-700 mb-3">Daftar indicator</p>
+
+    <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 max-w-xl">
+        @forelse ($indicators ?? [] as $indicator)
+            <div class="flex items-center gap-4 px-5 py-4">
+                <i class="ti ti-file-type-pdf text-red-500 text-lg shrink-0"></i>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-slate-800 truncate">{{ $indicator->judul }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Tujuan: {{ $indicator->satker->nama_satker ?? '-' }}</p>
+                </div>
+
+                @if ($indicator->results && $indicator->results->count() > 0)
+                    <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 shrink-0">
+                        <i class="ti ti-check text-sm"></i> Laporan diterima
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 shrink-0">
+                        <i class="ti ti-clock text-sm"></i> Menunggu satker
+                    </span>
+                @endif
+            </div>
+        @empty
+            <p class="px-5 py-8 text-center text-sm text-slate-400">Belum ada indicator dibuat.</p>
+        @endforelse
+    </div>
+
+@endsection
+
+@push('scripts')
+<script>
+    const selectAll = document.getElementById('selectAllSatker');
+    const checkboxes = document.querySelectorAll('.satker-checkbox');
+
+    selectAll.addEventListener('change', () => {
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            selectAll.checked = [...checkboxes].every(c => c.checked);
+        });
+    });
+</script>
+@endpush
