@@ -20,7 +20,7 @@
         </div>
     @endif
 
-    {{-- Buat indicator baru + pilih satker tujuan --}}
+    
     <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6 max-w-xl">
         <p class="text-sm font-medium text-slate-700 mb-4">Buat indicator baru</p>
 
