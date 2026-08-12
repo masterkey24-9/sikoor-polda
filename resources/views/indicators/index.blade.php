@@ -9,9 +9,9 @@
 
 @section('content')
 
-    @if (session('success'))
+    @if (session('success') || session('status'))
         <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3">
-            {{ session('success') }}
+            {{ session('success') ?? session('status') }}
         </div>
     @endif
     @if ($errors->any())
@@ -20,7 +20,6 @@
         </div>
     @endif
 
-    
     <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6 max-w-xl">
         <p class="text-sm font-medium text-slate-700 mb-4">Buat indicator baru</p>
 
@@ -39,12 +38,6 @@
                 <textarea id="deskripsi" name="deskripsi" rows="3"
                           placeholder="Detail tugas/laporan yang diminta..."
                           class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800 resize-none"></textarea>
-            </div>
-
-            <div>
-                <label for="tenggat_waktu" class="block text-sm font-medium text-slate-700 mb-1.5">Tenggat waktu</label>
-                <input type="date" id="tenggat_waktu" name="tenggat_waktu" required
-                       class="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
             </div>
 
             <div>
@@ -84,12 +77,11 @@
         </form>
     </div>
 
-    {{-- Daftar indicator yang sudah dibuat (pantauan status) --}}
     <p class="text-sm font-medium text-slate-700 mb-3">Daftar indicator</p>
 
     <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 max-w-xl">
         @forelse ($indicators ?? [] as $indicator)
-            <div class="flex items-center gap-4 px-5 py-4">
+            <a href="{{ route('indicators.show', $indicator->id) }}" class="flex items-center gap-4 px-5 py-4 hover:bg-slate-50">
                 <i class="ti ti-file-type-pdf text-red-500 text-lg shrink-0"></i>
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-slate-800 truncate">{{ $indicator->judul }}</p>
@@ -105,7 +97,7 @@
                         <i class="ti ti-clock text-sm"></i> Menunggu satker
                     </span>
                 @endif
-            </div>
+            </a>
         @empty
             <p class="px-5 py-8 text-center text-sm text-slate-400">Belum ada indicator dibuat.</p>
         @endforelse

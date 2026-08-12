@@ -3,14 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Indicator;
+use App\Models\Satker;
 use Illuminate\Http\Request;
 
 class IndicatorController extends Controller
 {
     public function index()
     {
-        $indicators = Indicator::orderBy('created_at', 'desc')->get();
-        $satkers = \App\Models\Satker::all();
+        $indicators = Indicator::with(['satker', 'results'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $satkers = Satker::all();
+
         return view('indicators.index', compact('indicators', 'satkers'));
     }
 
@@ -19,7 +24,6 @@ class IndicatorController extends Controller
         $request->validate([
             'judul' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
-            'tenggat_waktu' => 'required|date',
             'satker_id' => 'required|array|min:1',
             'satker_id.*' => 'exists:satkers,id',
             'file_pdf' => 'nullable|mimes:pdf|max:10240',
@@ -35,7 +39,6 @@ class IndicatorController extends Controller
             $indicator = Indicator::create([
                 'judul' => $request->judul,
                 'deskripsi' => $request->deskripsi,
-                'tenggat_waktu' => $request->tenggat_waktu,
                 'satker_id' => $satkerId,
                 'file_pdf' => $filePath,
             ]);

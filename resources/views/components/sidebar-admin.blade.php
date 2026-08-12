@@ -3,7 +3,6 @@
         ['label' => 'Monitoring', 'icon' => 'ti-chart-bar', 'route' => 'dashboard'],
         ['label' => 'Indicators & upload', 'icon' => 'ti-upload', 'route' => 'indicators.index'],
         ['label' => 'Kelola satker', 'icon' => 'ti-building-fortress', 'route' => 'satkers.index'],
-        ['label' => 'Live chat', 'icon' => 'ti-message-circle', 'route' => 'messages.index'],
     ];
 @endphp
 

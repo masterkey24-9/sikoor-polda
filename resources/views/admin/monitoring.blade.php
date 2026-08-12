@@ -9,21 +9,13 @@
 
 @section('content')
 
-    {{--
-        $indicators diharapkan dikirim dari controller (Indicator::with('satker')->latest()->get())
-        Data contoh di bawah cuma fallback kalau belum dikirim dari backend.
-    --}}
     @php
-        $list = $indicators ?? collect([
-            (object)['id' => 1, 'judul' => 'Laporan Triwulan I', 'satker_nama' => 'Polres Padang', 'tenggat_waktu' => '2026-08-15', 'status' => 'pending'],
-            (object)['id' => 2, 'judul' => 'Surat Perintah Tugas 08', 'satker_nama' => 'Polres Bukittinggi', 'tenggat_waktu' => '2026-08-05', 'status' => 'terkirim'],
-        ]);
+        $list = $indicators ?? collect([]);
         $totalIndicator = count($list);
         $totalTerkirim = collect($list)->where('status', 'terkirim')->count();
         $totalPending = $totalIndicator - $totalTerkirim;
     @endphp
 
-    {{-- Ringkasan --}}
     <div class="grid grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-xl p-5 border border-slate-200">
             <p class="text-sm text-slate-500 mb-1">Total indicator</p>
@@ -39,20 +31,17 @@
         </div>
     </div>
 
-    {{-- Filter --}}
     <div class="flex items-center gap-3 mb-4">
         <input type="text" id="searchInput" placeholder="Cari judul atau nama satker..."
                class="h-10 px-3.5 rounded-lg border border-slate-300 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-navy-800">
     </div>
 
-    {{-- Tabel data terbaru (indicator yang sudah dibuat/di-upload) --}}
     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-slate-50 text-left text-slate-500 border-b border-slate-200">
                     <th class="px-5 py-3 font-medium">Judul indicator</th>
                     <th class="px-5 py-3 font-medium">Satker tujuan</th>
-                    <th class="px-5 py-3 font-medium">Tenggat waktu</th>
                     <th class="px-5 py-3 font-medium">Status</th>
                 </tr>
             </thead>
@@ -66,9 +55,6 @@
                             {{ $item->judul }}
                         </td>
                         <td class="px-5 py-3.5 text-slate-600">{{ $item->satker_nama ?? '-' }}</td>
-                        <td class="px-5 py-3.5 text-slate-500">
-                            {{ \Carbon\Carbon::parse($item->tenggat_waktu)->translatedFormat('d M Y') }}
-                        </td>
                         <td class="px-5 py-3.5">
                             @if ($item->status === 'terkirim')
                                 <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">
@@ -83,7 +69,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-5 py-8 text-center text-slate-400">Belum ada indicator dibuat.</td>
+                        <td colspan="3" class="px-5 py-8 text-center text-slate-400">Belum ada indicator dibuat.</td>
                     </tr>
                 @endforelse
             </tbody>

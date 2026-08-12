@@ -37,9 +37,13 @@
                         @if ($indicator->deskripsi)
                             <p class="text-xs text-slate-400 mt-0.5">{{ $indicator->deskripsi }}</p>
                         @endif
-                        <p class="text-xs text-slate-400 mt-1">
-                            Tenggat: {{ \Carbon\Carbon::parse($indicator->tenggat_waktu)->translatedFormat('d M Y') }}
-                        </p>
+                        @if ($indicator->file_pdf)
+                            <a href="{{ asset('storage/' . $indicator->file_pdf) }}" target="_blank"
+                               onclick="event.stopPropagation()"
+                               class="inline-flex items-center gap-1.5 text-xs text-navy-800 hover:underline mt-1.5">
+                                <i class="ti ti-paperclip text-sm"></i> Lihat lampiran dari admin
+                            </a>
+                        @endif
                     </div>
 
                     @if ($indicator->results && $indicator->results->count() > 0)
@@ -53,7 +57,6 @@
                     @endif
                 </button>
 
-                {{-- Form upload laporan, field sesuai IndicatorResultController@store --}}
                 <div id="form-{{ $indicator->id }}" class="hidden px-5 pb-5">
                     <form method="POST" action="{{ route('indicator.upload', $indicator->id) }}"
                           enctype="multipart/form-data" class="bg-slate-50 rounded-lg p-4 space-y-3">

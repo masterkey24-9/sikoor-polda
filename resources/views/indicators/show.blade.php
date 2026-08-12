@@ -19,16 +19,17 @@
         <p class="text-sm text-slate-500 mt-1">{{ $indicator->deskripsi }}</p>
     @endif
 
-    <div class="flex items-center gap-6 mt-4 text-sm">
-        <div>
-            <p class="text-slate-400 text-xs">Satker tujuan</p>
-            <p class="text-slate-700 font-medium">{{ $indicator->satker->nama_satker ?? '-' }}</p>
-        </div>
-        <div>
-            <p class="text-slate-400 text-xs">Tenggat waktu</p>
-            <p class="text-slate-700 font-medium">{{ \Carbon\Carbon::parse($indicator->tenggat_waktu)->translatedFormat('d M Y') }}</p>
-        </div>
+    <div class="mt-4 text-sm">
+        <p class="text-slate-400 text-xs">Satker tujuan</p>
+        <p class="text-slate-700 font-medium">{{ $indicator->satker->nama_satker ?? '-' }}</p>
     </div>
+
+    @if ($indicator->file_pdf)
+        <a href="{{ asset('storage/' . $indicator->file_pdf) }}" target="_blank"
+           class="inline-flex items-center gap-1.5 text-sm text-navy-800 hover:underline mt-4">
+            <i class="ti ti-paperclip text-base"></i> Lihat lampiran dari admin
+        </a>
+    @endif
 </div>
 
 <p class="text-sm font-medium text-slate-700 mb-3">Laporan yang diterima</p>

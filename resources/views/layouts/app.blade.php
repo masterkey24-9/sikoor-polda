@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Sikoor') - Sistem Koordinasi Polda Sumbar</title>
 
-    {{-- Ganti ke Vite build (npm run build) sebelum production. CDN dipakai supaya bisa langsung jalan saat development. --}}
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -44,8 +42,15 @@
                 </main>
             </div>
         </div>
+
+        @auth
+            <a href="{{ route('messages.index') }}"
+               class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-navy-900 hover:bg-navy-800 text-white shadow-lg flex items-center justify-center transition z-50"
+               aria-label="Buka live chat">
+                <i class="ti ti-message-circle text-2xl"></i>
+            </a>
+        @endauth
     @else
-        
         <main>
             @yield('content')
         </main>
