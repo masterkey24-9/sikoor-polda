@@ -1,7 +1,6 @@
 @php
     $menu = [
         ['label' => 'Dokumen masuk', 'icon' => 'ti-inbox', 'route' => 'user.inbox'],
-        ['label' => 'Live chat', 'icon' => 'ti-message-circle', 'route' => 'user.chat'],
     ];
 @endphp
 
