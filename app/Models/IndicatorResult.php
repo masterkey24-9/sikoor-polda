@@ -15,6 +15,7 @@ class IndicatorResult extends Model
         'file_pdf',
         'status',
         'catatan_admin',
+        'nilai',
     ];
 
     public function indicator()

@@ -27,6 +27,7 @@
 
     <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 max-w-xl">
         @forelse ($indicators ?? [] as $indicator)
+            @php $latestResult = $indicator->results->sortByDesc('created_at')->first(); @endphp
             <div>
                 <button type="button"
                         onclick="document.getElementById('form-{{ $indicator->id }}').classList.toggle('hidden')"
@@ -44,15 +45,32 @@
                                 <i class="ti ti-paperclip text-sm"></i> Lihat lampiran dari admin
                             </a>
                         @endif
+
+                        @if ($latestResult && !is_null($latestResult->nilai))
+                            <p class="text-xs text-slate-600 mt-1.5">
+                                Nilai dari admin: <span class="font-medium text-navy-900">{{ $latestResult->nilai }}</span>
+                            </p>
+                        @endif
+                        @if ($latestResult && $latestResult->catatan_admin)
+                            <p class="text-xs text-slate-500 mt-0.5 italic">"{{ $latestResult->catatan_admin }}"</p>
+                        @endif
                     </div>
 
-                    @if ($indicator->results && $indicator->results->count() > 0)
-                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 shrink-0">
-                            <i class="ti ti-check text-sm"></i> Terkirim
-                        </span>
-                    @else
+                    @if (! $latestResult)
                         <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 shrink-0">
                             <i class="ti ti-clock text-sm"></i> Belum diunggah
+                        </span>
+                    @elseif ($latestResult->status === 'diterima')
+                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 shrink-0">
+                            <i class="ti ti-check text-sm"></i> Diterima
+                        </span>
+                    @elseif ($latestResult->status === 'direvisi')
+                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-red-50 text-red-700 shrink-0">
+                            <i class="ti ti-alert-triangle text-sm"></i> Perlu direvisi
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 shrink-0">
+                            <i class="ti ti-hourglass text-sm"></i> Menunggu dinilai
                         </span>
                     @endif
                 </button>
@@ -63,7 +81,12 @@
                         @csrf
 
                         <div>
-                            <label class="block text-xs font-medium text-slate-600 mb-1.5">File PDF laporan</label>
+                            <label class="block text-xs font-medium text-slate-600 mb-1.5">
+                                File PDF laporan
+                                @if ($latestResult)
+                                    <span class="font-normal text-slate-400">(mengunggah ulang akan mengirim laporan baru)</span>
+                                @endif
+                            </label>
                             <input type="file" name="file_pdf" accept="application/pdf" required
                                    class="w-full text-sm file:mr-3 file:h-9 file:px-3 file:rounded-lg file:border-0 file:bg-navy-900 file:text-white file:text-sm">
                             <p class="text-xs text-slate-400 mt-1">Maksimal 5MB, format PDF.</p>

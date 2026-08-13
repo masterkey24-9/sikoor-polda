@@ -34,6 +34,13 @@
             </div>
 
             <div>
+                <label for="periode" class="block text-sm font-medium text-slate-700 mb-1.5">Periode</label>
+                <input type="month" id="periode" name="periode" value="{{ old('periode', now()->format('Y-m')) }}"
+                       class="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                <p class="text-xs text-slate-400 mt-1">Dipakai untuk filter periode di halaman monitoring.</p>
+            </div>
+
+            <div>
                 <label for="deskripsi" class="block text-sm font-medium text-slate-700 mb-1.5">Deskripsi (opsional)</label>
                 <textarea id="deskripsi" name="deskripsi" rows="3"
                           placeholder="Detail tugas/laporan yang diminta..."

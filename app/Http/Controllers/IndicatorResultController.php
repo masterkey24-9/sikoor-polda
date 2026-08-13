@@ -20,6 +20,13 @@ class IndicatorResultController extends Controller
             return redirect()->back()->with('error', 'Akses ditolak.');
         }
 
+        $indicator = Indicator::findOrFail($indicator_id);
+
+        
+        if ($indicator->satker_id !== $user->satker_id) {
+            return redirect()->back()->with('error', 'Indicator ini bukan ditugaskan untuk satker Anda.');
+        }
+
         $filePath = $request->file('file_pdf')->store('uploads', 'public');
 
         IndicatorResult::create([
@@ -29,10 +36,35 @@ class IndicatorResultController extends Controller
             'status' => 'dikirim'
         ]);
 
-        // BARU — kirim notifikasi ke semua admin
-        $indicator = Indicator::find($indicator_id);
         NotificationController::notifyNewDocument($user->name, $indicator->judul ?? 'indikator');
 
         return redirect()->back()->with('success', 'Laporan berhasil dikirim.');
+    }
+
+    /**
+     * Admin menilai laporan yang masuk: mengisi nilai (0-100), mengubah status
+     * (diterima/direvisi), dan opsional catatan_admin. Sebelumnya kolom
+     * 'nilai' dan perubahan status tidak pernah dipakai di manapun.
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'admin') {
+            return redirect()->back()->with('error', 'Akses ditolak.');
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:diterima,direvisi',
+            'nilai' => 'required|integer|min:0|max:100',
+            'catatan_admin' => 'nullable|string|max:1000',
+        ]);
+
+        $result = IndicatorResult::findOrFail($id);
+        $result->update($validated);
+
+        NotificationController::notifyResultReviewed($result);
+        
+        return redirect()->back()->with('success', 'Penilaian laporan berhasil disimpan.');
     }
 }

@@ -35,9 +35,16 @@ Route::get('/dashboard', function () {
 
         $satkers = \App\Models\Satker::orderBy('nama_satker')->get();
 
-        // Kinerja per satker = progres pengerjaan tugas
-        // (jumlah indicator yang sudah dikirim laporannya / total indicator yang ditugaskan ke satker itu),
-        // mengikuti filter periode di atas.
+        // Kinerja per satker = kombinasi progres pengerjaan (satker mengirim laporan
+        // tepat waktu) DAN kualitas laporan yang sudah dinilai admin lewat kolom
+        // `nilai` pada indicator_results (0-100). Sebelumnya nilai kinerja di sini
+        // hanya dihitung dari rasio "jumlah dikirim / total tugas", sehingga
+        // laporan asal-asalan pun bisa mendapat skor 100%. Sekarang:
+        //   - progres  = seberapa banyak tugas yang sudah dikirim laporannya
+        //   - kualitas = rata-rata nilai yang diberikan admin atas laporan yang SUDAH dinilai
+        //   - skor akhir = 40% progres + 60% kualitas (laporan belum dinilai admin
+        //     tidak ikut menaikkan/menurunkan skor kualitas, supaya tidak bias
+        //     seolah-olah semua laporan otomatis "bagus")
         $periodeFilter = request('periode');
         $satkerPerformance = $satkers
             ->when(request()->filled('satker_id'), fn ($collection) => $collection->where('id', request('satker_id')))
@@ -51,12 +58,34 @@ Route::get('/dashboard', function () {
 
                 $totalTugas = (clone $tugasQuery)->count();
                 $tugasSelesai = (clone $tugasQuery)->whereHas('results')->count();
+                $progres = $totalTugas > 0 ? ($tugasSelesai / $totalTugas) * 100 : null;
 
-                $progres = $totalTugas > 0 ? round(($tugasSelesai / $totalTugas) * 100, 1) : null;
+                $rataKualitas = \App\Models\IndicatorResult::whereHas('indicator', function ($q) use ($satker, $periodeFilter) {
+                        $q->where('satker_id', $satker->id);
+                        if ($periodeFilter) {
+                            $periode = \Carbon\Carbon::createFromFormat('Y-m', $periodeFilter);
+                            $q->whereYear('periode', $periode->year)->whereMonth('periode', $periode->month);
+                        }
+                    })
+                    ->whereNotNull('nilai')
+                    ->avg('nilai');
+
+                $bobotProgres = config('sikoor.bobot_progres', 0.4);
+                $bobotKualitas = config('sikoor.bobot_kualitas', 0.6);
+
+                $skorAkhir = null;
+                if (! is_null($progres) && ! is_null($rataKualitas)) {
+                    $skorAkhir = round(($progres * $bobotProgres) + ($rataKualitas * $bobotKualitas), 1);
+                } elseif (! is_null($progres)) {
+                    // Belum ada laporan yang dinilai admin sama sekali, sementara pakai progres saja
+                    $skorAkhir = round($progres, 1);
+                }
 
                 $status = 'Belum ada tugas';
-                if (!is_null($progres)) {
-                    $status = $progres >= 85 ? 'Baik' : ($progres >= 60 ? 'Cukup' : 'Perlu Perhatian');
+                if (!is_null($skorAkhir)) {
+                    $ambangBaik = config('sikoor.ambang_baik', 85);
+                    $ambangCukup = config('sikoor.ambang_cukup', 60);
+                    $status = $skorAkhir >= $ambangBaik ? 'Baik' : ($skorAkhir >= $ambangCukup ? 'Cukup' : 'Perlu Perhatian');
                 }
 
                 return (object) [
@@ -64,7 +93,7 @@ Route::get('/dashboard', function () {
                     'nama_satker' => $satker->nama_satker,
                     'total_tugas' => $totalTugas,
                     'tugas_selesai' => $tugasSelesai,
-                    'nilai' => $progres,
+                    'nilai' => $skorAkhir,
                     'status' => $status,
                 ];
             })
@@ -84,19 +113,23 @@ Route::get('/dashboard', function () {
 })->middleware(['auth'])->name('dashboard');
 
     Route::middleware('auth')->group(function () {
-    Route::get('/indicators', [IndicatorController::class, 'index'])->name('indicators.index');
-    Route::post('/indicators', [IndicatorController::class, 'store'])->name('indicators.store');
-
+    // Upload laporan oleh satker — boleh diakses role satker, jadi tetap di luar grup 'admin'
     Route::post('/indicator/{indicator_id}/upload', [IndicatorResultController::class, 'store'])->name('indicator.upload');
-    Route::get('/indicators/{id}', [IndicatorController::class, 'show'])->name('indicators.show');
-    
+
+    Route::middleware('admin')->group(function () {
+        Route::get('/indicators', [IndicatorController::class, 'index'])->name('indicators.index');
+        Route::post('/indicators', [IndicatorController::class, 'store'])->name('indicators.store');
+        Route::get('/indicators/{id}', [IndicatorController::class, 'show'])->name('indicators.show');
+        Route::post('/indicator-results/{id}/nilai', [IndicatorResultController::class, 'updateStatus'])->name('indicator-results.updateStatus');
+
+        Route::get('/satkers', [SatkerController::class, 'index'])->name('satkers.index');
+        Route::post('/satkers', [SatkerController::class, 'store'])->name('satkers.store');
+        Route::delete('/satkers/{id}', [SatkerController::class, 'destroy'])->name('satkers.destroy');
+    });
+
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::get('/messages/data', [MessageController::class, 'data'])->name('messages.data');
     Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
-
-    Route::get('/satkers', [SatkerController::class, 'index'])->name('satkers.index');
-    Route::post('/satkers', [SatkerController::class, 'store'])->name('satkers.store');
-    Route::delete('/satkers/{id}', [SatkerController::class, 'destroy'])->name('satkers.destroy');
 
     Route::get('/notifications/data', [NotificationController::class, 'data'])->name('notifications.data');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');

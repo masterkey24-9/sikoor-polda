@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Indicator extends Model
 {
-    protected $fillable = ['judul', 'deskripsi', 'tenggat_waktu', 'satker_id'];
+    protected $fillable = ['judul', 'deskripsi', 'file_pdf', 'satker_id', 'periode'];
+
+    protected $casts = [
+        'periode' => 'date',
+    ];
 
     public function satker()
     {

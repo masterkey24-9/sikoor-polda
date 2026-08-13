@@ -106,4 +106,23 @@ class NotificationController extends Controller
         ]);
     }
 }
+    public static function notifyResultReviewed(\App\Models\IndicatorResult $result): void
+    {
+        $recipients = User::where('satker_id', $result->satker_id)
+            ->where('role', 'satker')
+            ->get();
+
+        $judul = $result->indicator->judul ?? 'laporan Anda';
+        $statusLabel = $result->status === 'diterima' ? 'diterima' : 'perlu direvisi';
+
+        foreach ($recipients as $recipient) {
+            Notification::create([
+                'user_id' => $recipient->id,
+                'type' => 'document',
+                'title' => 'Laporan Anda telah dinilai',
+                'body' => "\"{$judul}\" {$statusLabel}. Nilai: {$result->nilai}.",
+                'link' => route('user.inbox'),
+            ]);
+        }
+    }
 }

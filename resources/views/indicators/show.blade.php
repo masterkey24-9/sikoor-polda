@@ -36,21 +36,58 @@
 
 <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 max-w-2xl">
     @forelse ($indicator->results as $result)
-        <div class="flex items-center gap-4 px-5 py-4">
-            <i class="ti ti-file-type-pdf text-red-500 text-lg shrink-0"></i>
-            <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-slate-800">{{ $result->satker->nama_satker ?? '-' }}</p>
-                <p class="text-xs text-slate-400 mt-0.5">
-                    Dikirim {{ $result->created_at->translatedFormat('d M Y, H:i') }}
-                </p>
+        <div class="px-5 py-4">
+            <div class="flex items-center gap-4">
+                <i class="ti ti-file-type-pdf text-red-500 text-lg shrink-0"></i>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-slate-800">{{ $result->satker->nama_satker ?? '-' }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        Dikirim {{ $result->created_at->translatedFormat('d M Y, H:i') }}
+                        @if (!is_null($result->nilai))
+                            &middot; Nilai: <span class="font-medium text-navy-900">{{ $result->nilai }}</span>
+                        @endif
+                    </p>
+                </div>
+                <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full shrink-0
+                    {{ $result->status === 'diterima' ? 'bg-emerald-50 text-emerald-700' : ($result->status === 'direvisi' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600') }}">
+                    {{ ucfirst($result->status) }}
+                </span>
+                <a href="{{ asset('storage/' . $result->file_pdf) }}" target="_blank"
+                   class="h-9 px-3.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 shrink-0">
+                    <i class="ti ti-eye text-base"></i> Lihat file
+                </a>
             </div>
-            <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 shrink-0">
-                {{ ucfirst($result->status) }}
-            </span>
-            <a href="{{ asset('storage/' . $result->file_pdf) }}" target="_blank"
-               class="h-9 px-3.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 shrink-0">
-                <i class="ti ti-eye text-base"></i> Lihat file
-            </a>
+
+            {{-- Form penilaian admin: isi nilai (0-100), status, dan catatan --}}
+            <form method="POST" action="{{ route('indicator-results.updateStatus', $result->id) }}"
+                  class="mt-3 ml-9 flex flex-wrap items-end gap-3">
+                @csrf
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">Nilai (0-100)</label>
+                    <input type="number" name="nilai" min="0" max="100" required
+                           value="{{ old('nilai', $result->nilai) }}"
+                           class="w-24 h-9 px-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">Status</label>
+                    <select name="status" required
+                            class="h-9 px-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                        <option value="diterima" @selected($result->status === 'diterima')>Diterima</option>
+                        <option value="direvisi" @selected($result->status === 'direvisi')>Perlu direvisi</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[180px]">
+                    <label class="block text-xs text-slate-500 mb-1">Catatan (opsional)</label>
+                    <input type="text" name="catatan_admin" maxlength="1000"
+                           value="{{ old('catatan_admin', $result->catatan_admin) }}"
+                           placeholder="Feedback untuk satker..."
+                           class="w-full h-9 px-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                </div>
+                <button type="submit"
+                        class="h-9 px-4 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium transition">
+                    Simpan penilaian
+                </button>
+            </form>
         </div>
     @empty
         <p class="px-5 py-8 text-center text-sm text-slate-400">Belum ada laporan yang diunggah satker.</p>
