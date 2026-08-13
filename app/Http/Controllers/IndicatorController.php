@@ -1,58 +1,38 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Indicator;
-use App\Models\Satker;
+use App\Models\IndicatorResult;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
-class IndicatorController extends Controller
+class IndicatorResultController extends Controller
 {
-    public function index()
-    {
-        $indicators = Indicator::with(['satker', 'results'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $satkers = Satker::all();
-
-        return view('indicators.index', compact('indicators', 'satkers'));
-    }
-
-    public function store(Request $request)
+    public function store(Request $request, $indicator_id)
     {
         $request->validate([
-            'judul' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string',
-            'satker_id' => 'required|array|min:1',
-            'satker_id.*' => 'exists:satkers,id',
-            'file_pdf' => 'nullable|mimes:pdf|max:10240',
+            'file_pdf' => 'required|mimes:pdf|max:5120'
         ]);
 
-        $filePath = null;
-        if ($request->hasFile('file_pdf')) {
-            $filePath = $request->file('file_pdf')->store('indicator-files', 'public');
+        $user = Auth::user();
+
+        if ($user->role !== 'satker' || empty($user->satker_id)) {
+            return redirect()->back()->with('error', 'Akses ditolak.');
         }
 
-        $jumlah = 0;
-        foreach ($request->satker_id as $satkerId) {
-            $indicator = Indicator::create([
-                'judul' => $request->judul,
-                'deskripsi' => $request->deskripsi,
-                'satker_id' => $satkerId,
-                'file_pdf' => $filePath,
-            ]);
+        $filePath = $request->file('file_pdf')->store('uploads', 'public');
 
-            NotificationController::notifyNewIndicator($indicator);
-            $jumlah++;
-        }
+        IndicatorResult::create([
+            'indicator_id' => $indicator_id,
+            'satker_id' => $user->satker_id,
+            'file_pdf' => $filePath,
+            'status' => 'dikirim'
+        ]);
 
-        return redirect()->back()->with(['status' => "Indikator berhasil dikirim ke {$jumlah} satker!"]);
-    }
+        // BARU — kirim notifikasi ke semua admin
+        $indicator = Indicator::find($indicator_id);
+        NotificationController::notifyNewDocument($user->name, $indicator->judul ?? 'indikator');
 
-    public function show($id)
-    {
-        $indicator = Indicator::with(['satker', 'results.satker'])->findOrFail($id);
-        return view('indicators.show', compact('indicator'));
+        return redirect()->back()->with('success', 'Laporan berhasil dikirim.');
     }
 }

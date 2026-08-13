@@ -14,8 +14,18 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
     if (auth()->user()->role === 'admin') {
-        $indicators = \App\Models\Indicator::with(['satker', 'results'])
-            ->latest()
+        $query = \App\Models\Indicator::with(['satker', 'results']);
+
+        if (request()->filled('satker_id')) {
+            $query->where('satker_id', request('satker_id'));
+        }
+
+        if (request()->filled('periode')) {
+            $periode = \Carbon\Carbon::createFromFormat('Y-m', request('periode'));
+            $query->whereYear('periode', $periode->year)->whereMonth('periode', $periode->month);
+        }
+
+        $indicators = $query->latest()
             ->get()
             ->map(function ($item) {
                 $item->satker_nama = $item->satker->nama_satker ?? '-';
@@ -23,7 +33,51 @@ Route::get('/dashboard', function () {
                 return $item;
             });
 
-        return view('admin.monitoring', compact('indicators'));
+        $satkers = \App\Models\Satker::orderBy('nama_satker')->get();
+
+        // Kinerja per satker = progres pengerjaan tugas
+        // (jumlah indicator yang sudah dikirim laporannya / total indicator yang ditugaskan ke satker itu),
+        // mengikuti filter periode di atas.
+        $periodeFilter = request('periode');
+        $satkerPerformance = $satkers
+            ->when(request()->filled('satker_id'), fn ($collection) => $collection->where('id', request('satker_id')))
+            ->map(function ($satker) use ($periodeFilter) {
+                $tugasQuery = \App\Models\Indicator::where('satker_id', $satker->id);
+
+                if ($periodeFilter) {
+                    $periode = \Carbon\Carbon::createFromFormat('Y-m', $periodeFilter);
+                    $tugasQuery->whereYear('periode', $periode->year)->whereMonth('periode', $periode->month);
+                }
+
+                $totalTugas = (clone $tugasQuery)->count();
+                $tugasSelesai = (clone $tugasQuery)->whereHas('results')->count();
+
+                $progres = $totalTugas > 0 ? round(($tugasSelesai / $totalTugas) * 100, 1) : null;
+
+                $status = 'Belum ada tugas';
+                if (!is_null($progres)) {
+                    $status = $progres >= 85 ? 'Baik' : ($progres >= 60 ? 'Cukup' : 'Perlu Perhatian');
+                }
+
+                return (object) [
+                    'id' => $satker->id,
+                    'nama_satker' => $satker->nama_satker,
+                    'total_tugas' => $totalTugas,
+                    'tugas_selesai' => $tugasSelesai,
+                    'nilai' => $progres,
+                    'status' => $status,
+                ];
+            })
+            ->values();
+
+        $totalSatker = $satkerPerformance->count();
+        $rataRataKinerja = $satkerPerformance->whereNotNull('nilai')->avg('nilai');
+        $totalPerluPerhatian = $satkerPerformance->where('status', 'Perlu Perhatian')->count();
+
+        return view('admin.monitoring', compact(
+            'indicators', 'satkers', 'satkerPerformance',
+            'totalSatker', 'rataRataKinerja', 'totalPerluPerhatian'
+        ));
     }
 
     return redirect()->route('user.inbox');

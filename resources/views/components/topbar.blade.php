@@ -1,8 +1,22 @@
 <header class="h-16 shrink-0 bg-white border-b border-slate-200 flex items-center justify-between px-6 relative">
+    {{-- Aksen geometris tipis khas ukiran, sebagai border bawah header --}}
+    <div class="absolute bottom-0 left-0 right-0 h-[3px] opacity-70"
+         style="background-image: repeating-linear-gradient(135deg, #D4AF37 0 6px, transparent 6px 12px);"></div>
+
     <h1 class="font-display font-semibold text-lg text-navy-900">@yield('page-title', 'Dashboard')</h1>
 
     <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 text-xs text-slate-500 pr-4 border-r border-slate-200">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            Sistem Online
+            <span id="liveClock" class="font-medium text-slate-600 tabular-nums"></span>
+        </div>
+
         <div class="relative">
+
             <button id="notifBell" class="relative text-slate-500 hover:text-navy-900" aria-label="Notifikasi">
                 <i class="ti ti-bell text-xl"></i>
                 <span id="notifBadge" class="hidden absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gold-500 text-navy-950 text-[10px] font-medium flex items-center justify-center"></span>
@@ -20,13 +34,39 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-3 pl-4 border-l border-slate-200">
-            <div class="w-9 h-9 rounded-full bg-navy-900 text-white flex items-center justify-center text-sm font-medium">
-                {{ substr(auth()->user()->name ?? 'A', 0, 1) }}
-            </div>
-            <div class="text-sm leading-tight">
-                <p class="font-medium text-slate-800">{{ auth()->user()->name ?? 'Admin' }}</p>
-                <p class="text-slate-400 text-xs">{{ ucfirst(auth()->user()->role ?? 'admin') }}</p>
+        <div class="relative pl-4 border-l border-slate-200">
+            <button id="profileMenuBtn" type="button"
+                    class="flex items-center gap-3 rounded-lg hover:bg-slate-50 pr-2 py-1 transition"
+                    aria-haspopup="true" aria-expanded="false">
+                <div class="w-9 h-9 rounded-full bg-navy-900 text-white flex items-center justify-center text-sm font-medium shrink-0">
+                    {{ substr(auth()->user()->name ?? 'A', 0, 1) }}
+                </div>
+                <div class="text-sm leading-tight text-left">
+                    <p class="font-medium text-slate-800">{{ auth()->user()->name ?? 'Admin' }}</p>
+                    <p class="text-slate-400 text-xs">{{ ucfirst(auth()->user()->role ?? 'admin') }}</p>
+                </div>
+                <i class="ti ti-chevron-down text-slate-400 text-base ml-1"></i>
+            </button>
+
+            {{-- Dropdown menu profil --}}
+            <div id="profileMenuDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                <div class="px-4 py-3 border-b border-slate-100">
+                    <p class="text-sm font-medium text-slate-800 truncate">{{ auth()->user()->name ?? 'Admin' }}</p>
+                    <p class="text-xs text-slate-400 truncate">{{ auth()->user()->email ?? '' }}</p>
+                </div>
+                <a href="{{ route('profile.edit') }}"
+                   class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-navy-900">
+                    <i class="ti ti-user-circle text-lg"></i>
+                    Profil saya
+                </a>
+                <form method="POST" action="{{ route('logout') }}" class="border-t border-slate-100">
+                    @csrf
+                    <button type="submit"
+                            class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                        <i class="ti ti-logout text-lg"></i>
+                        Keluar
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -132,6 +172,23 @@
             }
         });
 
+        const profileBtn = document.getElementById('profileMenuBtn');
+        const profileDropdown = document.getElementById('profileMenuDropdown');
+
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const willShow = profileDropdown.classList.contains('hidden');
+            profileDropdown.classList.toggle('hidden');
+            profileBtn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!profileDropdown.contains(e.target) && e.target !== profileBtn && !profileBtn.contains(e.target)) {
+                profileDropdown.classList.add('hidden');
+                profileBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+
         markAllBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             try {
@@ -146,8 +203,19 @@
         });
 
         loadNotifications();
-        // Polling sederhana tiap 10 detik untuk update badge unread count.
+
         setInterval(loadNotifications, 10000);
+
+        const liveClock = document.getElementById('liveClock');
+        if (liveClock) {
+            function updateClock() {
+                const now = new Date();
+                const time = now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                liveClock.textContent = `${time} WIB`;
+            }
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
     })();
 </script>
 @endpush

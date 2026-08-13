@@ -81,11 +81,30 @@
 
     <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 max-w-xl">
         @forelse ($indicators ?? [] as $indicator)
-            <a href="{{ route('indicators.show', $indicator->id) }}" class="flex items-center gap-4 px-5 py-4 hover:bg-slate-50">
+            @php $latestResult = $indicator->results->sortByDesc('created_at')->first(); @endphp
+            <div onclick="window.location='{{ route('indicators.show', $indicator->id) }}'"
+                 class="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 cursor-pointer">
                 <i class="ti ti-file-type-pdf text-red-500 text-lg shrink-0"></i>
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-slate-800 truncate">{{ $indicator->judul }}</p>
                     <p class="text-xs text-slate-400 mt-0.5">Tujuan: {{ $indicator->satker->nama_satker ?? '-' }}</p>
+                </div>
+
+                {{-- Indikator kerja yang telah dikirimkan satker ke admin --}}
+                <div class="hidden sm:block text-xs max-w-[220px] shrink-0">
+                    @if ($latestResult)
+                        <p class="text-slate-700 font-medium truncate">
+                            <i class="ti ti-file-check text-emerald-600"></i>
+                            {{ $latestResult->file_pdf ? basename($latestResult->file_pdf) : 'Laporan dikirim' }}
+                        </p>
+                        <a href="{{ asset('storage/' . $latestResult->file_pdf) }}" target="_blank"
+                           onclick="event.stopPropagation()"
+                           class="text-navy-800 hover:underline">
+                            Lihat file &middot; {{ $latestResult->created_at->translatedFormat('d M Y') }}
+                        </a>
+                    @else
+                        <p class="text-slate-300 italic">Belum ada laporan dari satker</p>
+                    @endif
                 </div>
 
                 @if ($indicator->results && $indicator->results->count() > 0)
@@ -97,7 +116,7 @@
                         <i class="ti ti-clock text-sm"></i> Menunggu satker
                     </span>
                 @endif
-            </a>
+            </div>
         @empty
             <p class="px-5 py-8 text-center text-sm text-slate-400">Belum ada indicator dibuat.</p>
         @endforelse

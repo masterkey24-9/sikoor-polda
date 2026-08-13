@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Sikoor') - Sistem Koordinasi Polda Sumbar</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,8 +16,9 @@
             theme: {
                 extend: {
                     colors: {
-                        navy: { 950: '#0B1B33', 900: '#0F2547', 800: '#16355F', 700: '#1E4478' },
-                        gold: { 500: '#C89B3C', 400: '#D7B15E' },
+                        navy: { 950: '#3B2312', 900: '#4A2E16', 800: '#5C3B1E', 700: '#6E4726' },
+                        gold: { 500: '#D4AF37', 400: '#E0C165' },
+                        canvas: '#F8F9FA',
                     },
                     fontFamily: {
                         display: ['"Plus Jakarta Sans"', 'sans-serif'],
@@ -28,7 +30,7 @@
     </script>
     @stack('styles')
 </head>
-<body class="font-sans bg-slate-100 text-slate-800 antialiased">
+<body class="font-sans bg-canvas text-slate-800 antialiased">
 
     @hasSection('sidebar')
         <div class="flex min-h-screen">
