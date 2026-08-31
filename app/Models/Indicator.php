@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Indicator extends Model
 {
-    protected $fillable = ['judul', 'deskripsi', 'file_pdf', 'satker_id', 'periode'];
+    protected $fillable = ['judul', 'deskripsi', 'file_pdf', 'file_excel', 'satker_id', 'periode'];
 
     protected $casts = [
         'periode' => 'date',

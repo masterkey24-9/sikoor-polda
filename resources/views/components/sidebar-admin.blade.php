@@ -1,7 +1,9 @@
 @php
     $menu = [
-        ['label' => 'Monitoring', 'icon' => 'ti-chart-bar', 'route' => 'dashboard'],
+        ['label' => 'Dashboard', 'icon' => 'ti-layout-dashboard', 'route' => 'dashboard'],
+        ['label' => 'Monitoring IKPA', 'icon' => 'ti-chart-bar', 'route' => 'monitoring.ikpa'],
         ['label' => 'Indicators & upload', 'icon' => 'ti-upload', 'route' => 'indicators.index'],
+        ['label' => 'Peringatan Satker', 'icon' => 'ti-alert-triangle', 'route' => 'peringatan.index'],
         ['label' => 'Kelola satker', 'icon' => 'ti-building-fortress', 'route' => 'satkers.index'],
     ];
 @endphp

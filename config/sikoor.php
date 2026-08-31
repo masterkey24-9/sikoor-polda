@@ -40,4 +40,31 @@ return [
     'ikpa_ambang_baik' => 80,
     'ikpa_ambang_cukup' => 70,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Jenis indikator IKPA
+    |--------------------------------------------------------------------------
+    |
+    | Daftar baku jenis indikator yang bisa dipilih admin saat membuat tugas
+    | baru (dropdown "Pilih Indikator"). Ini SENGAJA dijadikan satu-satunya
+    | sumber kebenaran ("judul" harus persis sama dengan salah satu nilai di
+    | sini) karena beberapa logic di halaman Monitoring mencocokkan string ini
+    | secara persis: urutan tampilan panel "Monitoring Indikator IKPA", daftar
+    | "judul anggaran" untuk notifikasi deviasi, dan kolom detail di tabel
+    | "Monitoring IKPA Terbaru". Kalau menambah/mengubah jenis indikator,
+    | cukup ubah di sini saja.
+    |
+    */
+
+    'jenis_indikator' => [
+        'Revisi DIPA',
+        'Deviasi Halaman III DIPA',
+        'Penyerapan Anggaran',
+        'Belanja Kontraktual',
+        'Penyelesaian Tagihan',
+        'Pengelolaan UP/TUP',
+        'Dispensasi SPM',
+        'Capaian Output',
+    ],
+
 ];

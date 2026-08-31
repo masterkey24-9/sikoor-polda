@@ -9,6 +9,36 @@
 
 @section('content')
 
+    @if (($peringatanAktif ?? collect())->isNotEmpty())
+        <div class="mb-4 rounded-lg bg-red-600 text-white overflow-hidden">
+            <div class="whitespace-nowrap py-2.5" style="animation: sikoorMarquee 22s linear infinite;">
+                @foreach ($peringatanAktif as $p)
+                    <span class="inline-flex items-center gap-2 px-6 text-sm font-medium">
+                        <i class="ti ti-alert-triangle"></i>
+                        @if ($p->sudahLewatBatasWaktu())
+                            SUDAH LEWAT BATAS WAKTU ({{ $p->batas_waktu->translatedFormat('d M Y, H:i') }}) —
+                        @else
+                            Batas waktu {{ $p->batas_waktu->translatedFormat('d M Y, H:i') }} —
+                        @endif
+                        {{ $p->pesan }}
+                    </span>
+                @endforeach
+            </div>
+        </div>
+        <style>
+            @keyframes sikoorMarquee {
+                0%   { transform: translateX(100%); }
+                100% { transform: translateX(-100%); }
+            }
+        </style>
+    @endif
+
+    @if ($terkunci ?? false)
+        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+            Pengiriman laporan baru dikunci sementara karena melewati batas waktu peringatan di atas. Hubungi admin untuk membuka kembali.
+        </div>
+    @endif
+
     @if (session('success'))
         <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3">
             {{ session('success') }}
@@ -76,6 +106,11 @@
                 </button>
 
                 <div id="form-{{ $indicator->id }}" class="hidden px-5 pb-5">
+                    @if ($terkunci ?? false)
+                        <div class="bg-slate-50 rounded-lg p-4 text-xs text-slate-500">
+                            Pengiriman laporan dikunci sampai peringatan batas waktu diselesaikan admin.
+                        </div>
+                    @else
                     <form method="POST" action="{{ route('indicator.upload', $indicator->id) }}"
                           enctype="multipart/form-data" class="bg-slate-50 rounded-lg p-4 space-y-3">
                         @csrf
@@ -97,6 +132,7 @@
                             Kirim laporan
                         </button>
                     </form>
+                    @endif
                 </div>
             </div>
         @empty

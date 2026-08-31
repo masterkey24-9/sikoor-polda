@@ -20,6 +20,22 @@ class IndicatorResultController extends Controller
             return redirect()->back()->with('error', 'Akses ditolak.');
         }
 
+        // Kunci upload kalau satker ini punya peringatan aktif yang batas waktunya
+        // sudah lewat. Admin harus menutup peringatan itu dulu (tombol "Tandai
+        // selesai" di halaman Peringatan Satker) sebelum satker bisa upload lagi.
+        $peringatanMengunci = \App\Models\PeringatanSatker::where('satker_id', $user->satker_id)
+            ->mengunci()
+            ->latest('batas_waktu')
+            ->first();
+
+        if ($peringatanMengunci) {
+            return redirect()->back()->with('error',
+                'Satker Anda dikunci dari pengiriman laporan karena melewati batas waktu peringatan ('
+                . $peringatanMengunci->batas_waktu->translatedFormat('d M Y, H:i')
+                . '). Hubungi admin untuk menyelesaikan peringatan tersebut.'
+            );
+        }
+
         $indicator = Indicator::findOrFail($indicator_id);
 
         

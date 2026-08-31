@@ -9,8 +9,8 @@
 
 @section('content')
 
-<a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 text-sm text-navy-800 hover:underline mb-4">
-    <i class="ti ti-arrow-left text-base"></i> Kembali ke monitoring
+<a href="{{ route('monitoring.ikpa') }}" class="inline-flex items-center gap-1.5 text-sm text-navy-800 hover:underline mb-4">
+    <i class="ti ti-arrow-left text-base"></i> Kembali ke Monitoring IKPA
 </a>
 
 <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6 max-w-2xl">

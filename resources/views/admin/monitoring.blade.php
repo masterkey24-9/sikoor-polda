@@ -9,6 +9,10 @@
 
 @section('content')
 
+    <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 text-sm text-navy-800 hover:underline mb-4">
+        <i class="ti ti-arrow-left text-base"></i> Kembali ke Dashboard
+    </a>
+
     @php
         $granularitas = $granularitas ?? 'bulanan';
         $tahunAktif = $tahunAktif ?? now()->year;
@@ -17,7 +21,7 @@
         $tahunOpsi = range(now()->year, now()->year - 5);
     @endphp
 
-    <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-end gap-3 mb-3">
+    <form method="GET" action="{{ route('monitoring.ikpa') }}" class="flex flex-wrap items-end gap-3 mb-3">
         <div>
             <label for="filterSatker" class="block text-xs font-medium text-slate-500 mb-1.5">Pilih Satker</label>
             <select id="filterSatker" name="satker_id"
@@ -105,7 +109,7 @@
             Terapkan
         </button>
         @if (request('satker_id') || request('periode') || request('granularitas') || request('tahun') || request('triwulan') || request('semester'))
-            <a href="{{ route('dashboard') }}" class="h-10 px-4 rounded-lg border border-slate-300 text-sm text-slate-600 hover:bg-slate-50 flex items-center">
+            <a href="{{ route('monitoring.ikpa') }}" class="h-10 px-4 rounded-lg border border-slate-300 text-sm text-slate-600 hover:bg-slate-50 flex items-center">
                 Reset ke bulan berjalan
             </a>
         @endif
@@ -186,7 +190,7 @@
     {{-- ================= 2. TREND + KATEGORI + 5 TERENDAH ================= --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
 
-        <div class="bg-white rounded-xl p-5 border border-slate-200">
+        <div id="trend" class="bg-white rounded-xl p-5 border border-slate-200 scroll-mt-6">
             <div class="flex items-center justify-between mb-1">
                 <p class="text-sm font-medium text-slate-700">Trend Nilai IKPA Rata-rata</p>
 
@@ -215,7 +219,7 @@
             <canvas id="chartTrendIkpa" height="220"></canvas>
         </div>
 
-        <div class="bg-white rounded-xl p-5 border border-slate-200">
+        <div id="kategori" class="bg-white rounded-xl p-5 border border-slate-200 scroll-mt-6">
             <p class="text-sm font-medium text-slate-700 mb-3">Kategori Nilai IKPA Satker</p>
             <div class="relative">
                 <canvas id="chartKategoriIkpa" height="180"></canvas>
@@ -240,7 +244,7 @@
             </ul>
         </div>
 
-        <div class="bg-white rounded-xl p-5 border border-slate-200">
+        <div id="prioritas" class="bg-white rounded-xl p-5 border border-slate-200 scroll-mt-6">
             <p class="text-sm font-medium text-slate-700">Daftar Satker Prioritas Pembinaan</p>
             <p class="text-[11px] text-slate-400 mb-3">Satker yang paling memerlukan perhatian, diurutkan dari prioritas tertinggi</p>
             <table class="w-full text-sm">
@@ -286,7 +290,7 @@
     {{-- ================= 3. NILAI PER INDIKATOR + NOTIFIKASI + TINDAK LANJUT ================= --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
 
-        <div class="bg-white rounded-xl p-5 border border-slate-200">
+        <div id="indikator" class="bg-white rounded-xl p-5 border border-slate-200 scroll-mt-6">
             <p class="text-sm font-medium text-slate-700 mb-3">Monitoring Indikator IKPA</p>
             <div class="space-y-3">
                 @forelse ($nilaiPerIndikator ?? [] as $item)
@@ -302,7 +306,7 @@
                                 <div class="h-full rounded-full {{ $item['kelas_bar'] }}"
                                      style="width: {{ !is_null($item['rata']) ? min(100, max(0, $item['rata'])) : 0 }}%"></div>
                             </div>
-                            <span class="text-[11px] font-medium w-20 text-right {{ $item['kelas_teks'] }}">
+                            <span class="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-medium {{ $item['kelas_badge'] }}">
                                 {{ $item['warna'] }}
                             </span>
                         </div>
@@ -311,6 +315,13 @@
                     <p class="text-xs text-slate-400 text-center py-6">Belum ada indikator untuk periode ini.</p>
                 @endforelse
             </div>
+
+            @if (($nilaiPerIndikator ?? collect())->isNotEmpty())
+                <a href="{{ route('indicators.index') }}"
+                   class="block text-center text-xs font-medium text-navy-800 hover:underline mt-4 pt-3 border-t border-slate-100">
+                    Lihat Detail Indikator
+                </a>
+            @endif
         </div>
 
         <div class="bg-white rounded-xl p-5 border border-slate-200">
@@ -355,7 +366,7 @@
     </div>
 
     {{-- ================= 4. TABEL MONITORING IKPA TERBARU ================= --}}
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <div id="tabel" class="bg-white rounded-xl border border-slate-200 p-5 scroll-mt-6">
         <p class="text-sm font-medium text-slate-700 mb-3">Monitoring IKPA Terbaru</p>
         <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
             <table class="w-full text-sm min-w-[1180px]">

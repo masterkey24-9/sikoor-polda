@@ -20,17 +20,24 @@
         </div>
     @endif
 
-    <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6 max-w-xl">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
         <p class="text-sm font-medium text-slate-700 mb-4">Buat indicator baru</p>
 
         <form method="POST" action="{{ route('indicators.store') }}" enctype="multipart/form-data" class="space-y-4" id="indicatorForm">
             @csrf
 
             <div>
-                <label for="judul" class="block text-sm font-medium text-slate-700 mb-1.5">Judul</label>
-                <input type="text" id="judul" name="judul" required maxlength="255"
-                       placeholder="Contoh: Laporan Triwulan I"
-                       class="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                <label for="judul" class="block text-sm font-medium text-slate-700 mb-1.5">Pilih Indikator</label>
+                <select id="judul" name="judul" required
+                        class="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                    <option value="" disabled selected>-- Pilih jenis indikator --</option>
+                    @foreach ($jenisIndikator ?? [] as $jenis)
+                        <option value="{{ $jenis }}" @selected(old('judul') === $jenis)>{{ $jenis }}</option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-slate-400 mt-1">Jenis indikator sudah baku, supaya konsisten dengan data di halaman Monitoring.</p>
             </div>
 
             <div>
@@ -41,17 +48,39 @@
             </div>
 
             <div>
-                <label for="deskripsi" class="block text-sm font-medium text-slate-700 mb-1.5">Indicators (opsional)</label>
+                <label for="deskripsi" class="block text-sm font-medium text-slate-700 mb-1.5">Deskripsi (opsional)</label>
                 <textarea id="deskripsi" name="deskripsi" rows="3"
                           placeholder="Detail tugas/laporan yang diminta..."
                           class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800 resize-none"></textarea>
             </div>
 
             <div>
-                <label for="file_pdf" class="block text-sm font-medium text-slate-700 mb-1.5">Lampiran PDF (opsional)</label>
-                <input type="file" id="file_pdf" name="file_pdf" accept="application/pdf"
-                       class="w-full text-sm file:mr-3 file:h-9 file:px-3 file:rounded-lg file:border-0 file:bg-navy-900 file:text-white file:text-sm">
-                <p class="text-xs text-slate-400 mt-1">Kirim dokumen pendukung langsung ke satker, maksimal 10MB.</p>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">Lampiran (opsional)</label>
+                <div class="flex items-start gap-3">
+                    <div>
+                        <input type="file" id="file_pdf" name="file_pdf" accept="application/pdf" class="hidden"
+                               onchange="sikoorUpdateFileLabel(this, 'file_pdf_label')">
+                        <label for="file_pdf"
+                               class="cursor-pointer flex flex-col items-center justify-center w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 hover:border-red-400 hover:bg-red-50 transition">
+                            <i class="ti ti-file-type-pdf text-red-500 text-2xl"></i>
+                            <span class="text-[11px] text-slate-500 mt-1">PDF</span>
+                        </label>
+                    </div>
+                    <div>
+                        <input type="file" id="file_excel" name="file_excel" accept=".xlsx,.xls,.csv" class="hidden"
+                               onchange="sikoorUpdateFileLabel(this, 'file_excel_label')">
+                        <label for="file_excel"
+                               class="cursor-pointer flex flex-col items-center justify-center w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 hover:border-emerald-400 hover:bg-emerald-50 transition">
+                            <i class="ti ti-file-type-xls text-emerald-600 text-2xl"></i>
+                            <span class="text-[11px] text-slate-500 mt-1">Excel</span>
+                        </label>
+                    </div>
+                    <div class="flex-1 text-xs text-slate-500 space-y-1.5 pt-1">
+                        <p id="file_pdf_label">Belum ada file PDF dipilih</p>
+                        <p id="file_excel_label">Belum ada file Excel dipilih</p>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-1.5">Kirim dokumen pendukung langsung ke satker (PDF dan/atau Excel), maksimal 10MB per file.</p>
             </div>
 
             <div>
@@ -84,49 +113,41 @@
         </form>
     </div>
 
-    <p class="text-sm font-medium text-slate-700 mb-3">Daftar indicator</p>
+    {{-- Ringkasan dipakai sebagai <details> (disclosure widget bawaan browser, tanpa JS):
+         di layar lebar (lg ke atas) otomatis kebuka duluan ("open") dan duduk sejajar
+         di samping form. Kalau layarnya sempit dan dia jatuh ke bawah form, judulnya
+         tetap bisa diklik untuk collapse/expand, jadi nggak makan tempat vertikal. --}}
+    <details open class="bg-white rounded-xl border border-slate-200 p-6 group">
+        <summary class="cursor-pointer list-none flex items-center justify-between">
+            <span>
+                <span class="block text-sm font-medium text-slate-700">Ringkasan Indikator Bulan Ini</span>
+                <span class="block text-xs text-slate-400 mt-0.5">Status &amp; warna sama persis dengan panel "Monitoring Indikator IKPA" di dashboard.</span>
+            </span>
+            <i class="ti ti-chevron-down text-slate-400 shrink-0 ml-3 transition-transform group-open:rotate-180"></i>
+        </summary>
 
-    <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 max-w-xl">
-        @forelse ($indicators ?? [] as $indicator)
-            @php $latestResult = $indicator->results->sortByDesc('created_at')->first(); @endphp
-            <div onclick="window.location='{{ route('indicators.show', $indicator->id) }}'"
-                 class="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 cursor-pointer">
-                <i class="ti ti-file-type-pdf text-red-500 text-lg shrink-0"></i>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-slate-800 truncate">{{ $indicator->judul }}</p>
-                    <p class="text-xs text-slate-400 mt-0.5">Tujuan: {{ $indicator->satker->nama_satker ?? '-' }}</p>
-                </div>
-
-                {{-- Indikator kerja yang telah dikirimkan satker ke admin --}}
-                <div class="hidden sm:block text-xs max-w-[220px] shrink-0">
-                    @if ($latestResult)
-                        <p class="text-slate-700 font-medium truncate">
-                            <i class="ti ti-file-check text-emerald-600"></i>
-                            {{ $latestResult->file_pdf ? basename($latestResult->file_pdf) : 'Laporan dikirim' }}
+        <div class="mt-4 -mx-6 border-t border-slate-100 divide-y divide-slate-100">
+            @forelse ($ringkasanIndikator ?? [] as $item)
+                <div class="flex items-center justify-between gap-4 px-6 py-4">
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-slate-800 truncate">{{ $item['judul'] }}</p>
+                        <p class="text-xs text-slate-400 mt-0.5">
+                            {{ $item['sudah_lapor'] }}/{{ $item['total_satker'] }} satker sudah lapor
+                            @if (! is_null($item['rata']))
+                                &middot; Rata-rata nilai {{ number_format($item['rata'], 2) }}
+                            @endif
                         </p>
-                        <a href="{{ asset('storage/' . $latestResult->file_pdf) }}" target="_blank"
-                           onclick="event.stopPropagation()"
-                           class="text-navy-800 hover:underline">
-                            Lihat file &middot; {{ $latestResult->created_at->translatedFormat('d M Y') }}
-                        </a>
-                    @else
-                        <p class="text-slate-300 italic">Belum ada laporan dari satker</p>
-                    @endif
+                    </div>
+                    <span class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium {{ $item['kelas'] }}">
+                        {{ $item['warna'] }}
+                    </span>
                 </div>
+            @empty
+                <p class="px-6 py-8 text-center text-sm text-slate-400">Belum ada jenis indikator terdaftar.</p>
+            @endforelse
+        </div>
+    </details>
 
-                @if ($indicator->results && $indicator->results->count() > 0)
-                    <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 shrink-0">
-                        <i class="ti ti-check text-sm"></i> Laporan diterima
-                    </span>
-                @else
-                    <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 shrink-0">
-                        <i class="ti ti-clock text-sm"></i> Menunggu satker
-                    </span>
-                @endif
-            </div>
-        @empty
-            <p class="px-5 py-8 text-center text-sm text-slate-400">Belum ada indicator dibuat.</p>
-        @endforelse
     </div>
 
 @endsection
@@ -145,5 +166,14 @@
             selectAll.checked = [...checkboxes].every(c => c.checked);
         });
     });
+
+    function sikoorUpdateFileLabel(input, labelId) {
+        const label = document.getElementById(labelId);
+        if (!label) return;
+        const jenis = labelId === 'file_pdf_label' ? 'PDF' : 'Excel';
+        label.textContent = input.files.length
+            ? input.files[0].name
+            : `Belum ada file ${jenis} dipilih`;
+    }
 </script>
 @endpush
