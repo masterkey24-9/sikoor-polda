@@ -41,7 +41,7 @@
             </div>
 
             <div>
-                <label for="deskripsi" class="block text-sm font-medium text-slate-700 mb-1.5">Deskripsi (opsional)</label>
+                <label for="deskripsi" class="block text-sm font-medium text-slate-700 mb-1.5">Indicators (opsional)</label>
                 <textarea id="deskripsi" name="deskripsi" rows="3"
                           placeholder="Detail tugas/laporan yang diminta..."
                           class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800 resize-none"></textarea>

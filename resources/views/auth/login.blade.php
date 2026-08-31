@@ -5,10 +5,10 @@
 @section('content')
 
 @php
-    $loginBackgroundImage = asset('images/login-background.jpg');
+    $loginBackgroundImage = asset('images/login-background.jpeg');
     $loginLogo = asset('images/logo.png');
     $loginLogoExists = file_exists(public_path('images/logo.png'));
-    $loginBgExists = file_exists(public_path('images/login-background.jpg'));
+    $loginBgExists = file_exists(public_path('images/login-background.jpeg'));
 @endphp
 
 <div class="min-h-screen flex bg-navy-950 relative overflow-hidden">
@@ -44,7 +44,7 @@
             <div class="flex flex-col items-center mb-8">
                 @if ($loginLogoExists)
                     <img src="{{ $loginLogo }}" alt="Logo Sikoor Polda Sumbar"
-                         class="w-12 h-12 rounded-xl object-cover mb-3 shadow-lg">
+                         class="w-12 h-12 rounded-xl object-contain mb-3 shadow-lg">
                 @else
                     <div class="w-12 h-12 rounded-xl bg-gold-500 flex items-center justify-center text-navy-950 font-display font-bold text-xl mb-3">S</div>
                 @endif
@@ -89,7 +89,7 @@
                 </form>
             </div>
 
-            <p class="text-center text-slate-500 text-xs mt-6">
+            <p class="text-center text-slate-500 text-xs mt-6 text-white">
                 Akses khusus personel Polda Sumbar dan satuan kerja terdaftar.
             </p>
         </div>

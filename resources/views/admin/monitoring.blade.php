@@ -9,42 +9,7 @@
 
 @section('content')
 
-    @php
-        $list = $indicators ?? collect([]);
-        $totalIndicator = count($list);
-        $totalTerkirim = collect($list)->where('status', 'terkirim')->count();
-        $totalPending = $totalIndicator - $totalTerkirim;
-    @endphp
-
-    <div class="grid grid-cols-3 gap-4 mb-6">
-        <div class="bg-white rounded-xl p-5 border border-slate-200 flex items-center gap-4">
-            <div class="w-11 h-11 rounded-xl bg-navy-900/10 text-navy-900 flex items-center justify-center shrink-0">
-                <i class="ti ti-file-text text-xl"></i>
-            </div>
-            <div>
-                <p class="text-sm text-slate-500 mb-0.5">Total indicator</p>
-                <p class="text-2xl font-display font-semibold text-navy-900">{{ $totalIndicator }}</p>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl p-5 border border-slate-200 flex items-center gap-4">
-            <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                <i class="ti ti-circle-check text-xl"></i>
-            </div>
-            <div>
-                <p class="text-sm text-slate-500 mb-0.5">Laporan diterima</p>
-                <p class="text-2xl font-display font-semibold text-emerald-600">{{ $totalTerkirim }}</p>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl p-5 border border-slate-200 flex items-center gap-4">
-            <div class="w-11 h-11 rounded-xl bg-gold-500/15 text-navy-900 flex items-center justify-center shrink-0">
-                <i class="ti ti-clock text-xl"></i>
-            </div>
-            <div>
-                <p class="text-sm text-slate-500 mb-0.5">Menunggu satker</p>
-                <p class="text-2xl font-display font-semibold text-navy-900">{{ $totalPending }}</p>
-            </div>
-        </div>
-    </div>
+    
 
     <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-end gap-3 mb-4">
         <div>
@@ -75,58 +40,9 @@
                 Reset
             </a>
         @endif
-
-        <div class="flex-1"></div>
-
-        <div>
-            <input type="text" id="searchInput" placeholder="Cari judul atau nama satker..."
-                   class="h-10 px-3.5 rounded-lg border border-slate-300 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-navy-800">
-        </div>
     </form>
 
-    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="bg-navy-950/[0.03] text-left text-slate-500 border-b border-slate-200">
-                    <th class="px-5 py-3 font-medium">Judul indicator</th>
-                    <th class="px-5 py-3 font-medium">Satker tujuan</th>
-                    <th class="px-5 py-3 font-medium">Status</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                @forelse ($list as $item)
-                    <tr onclick="window.location='{{ route('indicators.show', $item->id) }}'"
-                        class="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer row-item"
-                        data-search="{{ strtolower($item->judul . ' ' . ($item->satker_nama ?? '')) }}">
-                        <td class="px-5 py-3.5 flex items-center gap-2.5">
-                            <i class="ti ti-file-type-pdf text-red-500 text-lg"></i>
-                            {{ $item->judul }}
-                        </td>
-                        <td class="px-5 py-3.5 text-slate-600">{{ $item->satker_nama ?? '-' }}</td>
-                        <td class="px-5 py-3.5">
-                            @if ($item->status === 'terkirim')
-                                <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">
-                                    <i class="ti ti-check text-sm"></i> Diterima
-                                </span>
-                            @else
-                                <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-gold-500/15 text-navy-900">
-                                    <i class="ti ti-clock text-sm"></i> Menunggu
-                                </span>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="3" class="px-5 py-8 text-center text-slate-400">Belum ada indicator dibuat.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    {{-- ================== Monitoring Kinerja Satker (baru) ================== --}}
-
-    <p class="text-sm font-medium text-slate-700 mt-10 mb-3">Monitoring Kinerja Satker</p>
+    <p class="text-sm font-medium text-slate-700 mb-3">Monitoring Kinerja Satker</p>
 
     <div class="grid grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-xl p-5 border border-slate-200">
@@ -212,15 +128,3 @@
     </div>
 
 @endsection
-
-@push('scripts')
-<script>
-    const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('input', () => {
-        const keyword = searchInput.value.toLowerCase();
-        document.querySelectorAll('.row-item').forEach(row => {
-            row.style.display = row.dataset.search.includes(keyword) ? '' : 'none';
-        });
-    });
-</script>
-@endpush
