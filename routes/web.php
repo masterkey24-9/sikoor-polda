@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\IndicatorController;
 use App\Http\Controllers\IndicatorResultController;
@@ -35,16 +36,6 @@ Route::get('/dashboard', function () {
 
         $satkers = \App\Models\Satker::orderBy('nama_satker')->get();
 
-        // Kinerja per satker = kombinasi progres pengerjaan (satker mengirim laporan
-        // tepat waktu) DAN kualitas laporan yang sudah dinilai admin lewat kolom
-        // `nilai` pada indicator_results (0-100). Sebelumnya nilai kinerja di sini
-        // hanya dihitung dari rasio "jumlah dikirim / total tugas", sehingga
-        // laporan asal-asalan pun bisa mendapat skor 100%. Sekarang:
-        //   - progres  = seberapa banyak tugas yang sudah dikirim laporannya
-        //   - kualitas = rata-rata nilai yang diberikan admin atas laporan yang SUDAH dinilai
-        //   - skor akhir = 40% progres + 60% kualitas (laporan belum dinilai admin
-        //     tidak ikut menaikkan/menurunkan skor kualitas, supaya tidak bias
-        //     seolah-olah semua laporan otomatis "bagus")
         $periodeFilter = request('periode');
         $satkerPerformance = $satkers
             ->when(request()->filled('satker_id'), fn ($collection) => $collection->where('id', request('satker_id')))
@@ -103,9 +94,42 @@ Route::get('/dashboard', function () {
         $rataRataKinerja = $satkerPerformance->whereNotNull('nilai')->avg('nilai');
         $totalPerluPerhatian = $satkerPerformance->where('status', 'Perlu Perhatian')->count();
 
+        $monthlyTopSatker = collect();
+        for ($i = 5; $i >= 0; $i--) {
+            $bulan = now()->subMonths($i);
+
+            $tertinggi = \App\Models\IndicatorResult::whereNotNull('indicator_results.nilai')
+                ->join('indicators', 'indicator_results.indicator_id', '=', 'indicators.id')
+                ->whereYear('indicators.periode', $bulan->year)
+                ->whereMonth('indicators.periode', $bulan->month)
+                ->select('indicators.satker_id', DB::raw('AVG(indicator_results.nilai) as rata'))
+                ->groupBy('indicators.satker_id')
+                ->orderByDesc('rata')
+                ->first();
+
+            $namaSatkerTertinggi = $tertinggi
+                ? optional(\App\Models\Satker::find($tertinggi->satker_id))->nama_satker
+                : null;
+
+            $monthlyTopSatker->push([
+                'bulan' => $bulan->translatedFormat('M Y'),
+                'nilai' => $tertinggi ? round($tertinggi->rata, 1) : 0,
+                'satker' => $namaSatkerTertinggi ?? '-',
+            ]);
+        }
+
+        $chartSatkerLabels = $satkerPerformance->pluck('nama_satker');
+        $chartSatkerNilai = $satkerPerformance->map(fn ($sp) => $sp->nilai ?? 0);
+
+        $totalIndikator = $indicators->count();
+        $totalIndikatorDiterima = $indicators->where('status', 'terkirim')->count();
+        $totalIndikatorMenunggu = $totalIndikator - $totalIndikatorDiterima;
+
         return view('admin.monitoring', compact(
             'indicators', 'satkers', 'satkerPerformance',
-            'totalSatker', 'rataRataKinerja', 'totalPerluPerhatian'
+            'totalSatker', 'rataRataKinerja', 'totalPerluPerhatian',
+            'monthlyTopSatker', 'chartSatkerLabels', 'chartSatkerNilai',
+            'totalIndikatorDiterima', 'totalIndikatorMenunggu'
         ));
     }
 
@@ -113,7 +137,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth'])->name('dashboard');
 
     Route::middleware('auth')->group(function () {
-    // Upload laporan oleh satker — boleh diakses role satker, jadi tetap di luar grup 'admin'
+
     Route::post('/indicator/{indicator_id}/upload', [IndicatorResultController::class, 'store'])->name('indicator.upload');
 
     Route::middleware('admin')->group(function () {

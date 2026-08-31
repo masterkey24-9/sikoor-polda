@@ -61,70 +61,176 @@
         </div>
     </div>
 
-    <p class="text-sm font-medium text-slate-700 mb-3">Daftar Kinerja Satker</p>
-
-    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="bg-navy-950/[0.03] text-left text-slate-500 border-b border-slate-200">
-                    <th class="px-5 py-3 font-medium">Satker</th>
-                    <th class="px-5 py-3 font-medium">Nilai</th>
-                    <th class="px-5 py-3 font-medium">Status</th>
-                    <th class="px-5 py-3 font-medium">Progress</th>
-                    <th class="px-5 py-3 font-medium text-right">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($satkerPerformance ?? [] as $sp)
-                    @php
-                        $badgeClass = match ($sp->status) {
-                            'Baik' => 'bg-emerald-50 text-emerald-700',
-                            'Cukup' => 'bg-gold-500/15 text-navy-900',
-                            'Perlu Perhatian' => 'bg-red-50 text-red-700',
-                            default => 'bg-slate-100 text-slate-500',
-                        };
-                        $barClass = match ($sp->status) {
-                            'Baik' => 'bg-emerald-500',
-                            'Cukup' => 'bg-gold-500',
-                            'Perlu Perhatian' => 'bg-red-500',
-                            default => 'bg-slate-300',
-                        };
-                    @endphp
-                    <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                        <td class="px-5 py-3.5 text-slate-800 font-medium">{{ $sp->nama_satker }}</td>
-                        <td class="px-5 py-3.5">
-                            @if (!is_null($sp->nilai))
-                                <span class="font-medium text-navy-900">{{ $sp->nilai }}%</span>
-                                <span class="text-xs text-slate-400">({{ $sp->tugas_selesai }}/{{ $sp->total_tugas }} tugas)</span>
-                            @else
-                                <span class="text-slate-300">-</span>
-                            @endif
-                        </td>
-                        <td class="px-5 py-3.5">
-                            <span class="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full {{ $badgeClass }}">
-                                {{ $sp->status }}
-                            </span>
-                        </td>
-                        <td class="px-5 py-3.5">
-                            <div class="w-32 h-2 rounded-full bg-slate-100 overflow-hidden">
-                                <div class="h-full {{ $barClass }}" style="width: {{ $sp->nilai ?? 0 }}%"></div>
-                            </div>
-                        </td>
-                        <td class="px-5 py-3.5 text-right">
-                            <a href="{{ route('dashboard', ['satker_id' => $sp->id]) }}"
-                               class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-navy-900"
-                               aria-label="Lihat detail {{ $sp->nama_satker }}">
-                                <i class="ti ti-eye text-base"></i>
-                            </a>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-5 py-8 text-center text-slate-400">Belum ada data satker.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+    <p class="text-sm font-medium text-slate-700 mb-3">Nilai Satker Tertinggi (Bulanan)</p>
+    <div class="bg-white rounded-xl p-5 border border-slate-200 mb-6">
+        <canvas id="chartTopSatkerBulanan" height="90"></canvas>
     </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div class="lg:col-span-2 bg-white rounded-xl p-5 border border-slate-200">
+            <p class="text-sm font-medium text-slate-700 mb-3">Nilai Pantauan per Satker</p>
+            <canvas id="chartNilaiPerSatker" height="220"></canvas>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200">
+            <p class="text-sm font-medium text-slate-700 mb-3">Persentase Status Indicator</p>
+            <canvas id="chartStatusIndicator" height="220"></canvas>
+        </div>
+    </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    // ===== 1) Nilai Satker Tertinggi (Bulanan) — line chart dengan gradasi =====
+    const bulanLabels = @json($monthlyTopSatker->pluck('bulan'));
+    const bulanNilai = @json($monthlyTopSatker->pluck('nilai'));
+    const bulanSatker = @json($monthlyTopSatker->pluck('satker'));
+
+    const ctxLine = document.getElementById('chartTopSatkerBulanan').getContext('2d');
+    const gradientLine = ctxLine.createLinearGradient(0, 0, 0, 260);
+    gradientLine.addColorStop(0, 'rgba(212, 175, 55, 0.35)');
+    gradientLine.addColorStop(1, 'rgba(212, 175, 55, 0)');
+
+    new Chart(ctxLine, {
+        type: 'line',
+        data: {
+            labels: bulanLabels,
+            datasets: [{
+                label: 'Nilai satker tertinggi',
+                data: bulanNilai,
+                borderColor: '#D4AF37',
+                backgroundColor: gradientLine,
+                borderWidth: 2.5,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#5C3B1E',
+                pointBorderColor: '#D4AF37',
+                pointBorderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#3B2312',
+                    padding: 10,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: (ctx) => 'Nilai: ' + ctx.raw + '%',
+                        afterLabel: (ctx) => 'Satker: ' + (bulanSatker[ctx.dataIndex] ?? '-')
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true, max: 100,
+                    ticks: { callback: (v) => v + '%' },
+                    grid: { color: '#F1F5F9' }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // ===== 2) Nilai Pantauan per Satker — bar chart =====
+    const satkerLabels = @json($chartSatkerLabels);
+    const satkerNilai = @json($chartSatkerNilai);
+
+    new Chart(document.getElementById('chartNilaiPerSatker'), {
+        type: 'bar',
+        data: {
+            labels: satkerLabels,
+            datasets: [{
+                label: 'Nilai (%)',
+                data: satkerNilai,
+                backgroundColor: '#5C3B1E',
+                hoverBackgroundColor: '#D4AF37',
+                borderRadius: 6,
+                maxBarThickness: 26,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#3B2312',
+                    padding: 10,
+                    cornerRadius: 8,
+                    callbacks: { label: (ctx) => 'Nilai: ' + ctx.raw + '%' }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true, max: 100,
+                    ticks: { callback: (v) => v + '%' },
+                    grid: { color: '#F1F5F9' }
+                },
+                x: {
+                    ticks: { autoSkip: false, maxRotation: 60, minRotation: 0 },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // ===== 3) Persentase Status Indicator — doughnut dengan angka besar di tengah =====
+    const totalDiterima = {{ $totalIndikatorDiterima }};
+    const totalMenunggu = {{ $totalIndikatorMenunggu }};
+    const totalSemua = totalDiterima + totalMenunggu;
+    const persenDiterima = totalSemua > 0 ? Math.round((totalDiterima / totalSemua) * 100) : 0;
+
+    const centerTextPlugin = {
+        id: 'centerText',
+        afterDraw(chart) {
+            const { ctx, chartArea: { top, left, width, height } } = chart;
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '700 26px "Plus Jakarta Sans", sans-serif';
+            ctx.fillStyle = '#3B2312';
+            ctx.fillText(persenDiterima + '%', left + width / 2, top + height / 2 - 8);
+            ctx.font = '500 11px Inter, sans-serif';
+            ctx.fillStyle = '#94A3B8';
+            ctx.fillText('Diterima', left + width / 2, top + height / 2 + 14);
+            ctx.restore();
+        }
+    };
+
+    new Chart(document.getElementById('chartStatusIndicator'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Diterima', 'Menunggu'],
+            datasets: [{
+                data: [totalDiterima, totalMenunggu],
+                backgroundColor: ['#10B981', '#F1E4C3'],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '72%',
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+                tooltip: {
+                    backgroundColor: '#3B2312',
+                    padding: 10,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: (ctx) => {
+                            const pct = totalSemua > 0 ? Math.round((ctx.raw / totalSemua) * 100) : 0;
+                            return ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
+                        }
+                    }
+                }
+            }
+        },
+        plugins: [centerTextPlugin]
+    });
+</script>
+@endpush
 
 @endsection
