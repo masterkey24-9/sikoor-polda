@@ -13,6 +13,7 @@ class IndicatorResult extends Model
         'indicator_id',
         'satker_id',
         'file_pdf',
+        'file_excel',
         'status',
         'catatan_admin',
         'nilai',

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Indicator;
@@ -11,8 +12,16 @@ class IndicatorResultController extends Controller
     public function store(Request $request, $indicator_id)
     {
         $request->validate([
-            'file_pdf' => 'required|mimes:pdf|max:5120'
+            'file_pdf' => 'nullable|mimes:pdf|max:5120',
+            'file_excel' => 'nullable|mimes:xlsx,xls,csv|max:5120',
+        ], [
+            'file_excel.mimes' => 'File Excel harus berformat .xlsx, .xls, atau .csv.',
         ]);
+
+        // Laporan wajib punya minimal satu file (PDF atau Excel), boleh dua-duanya sekaligus.
+        if (! $request->hasFile('file_pdf') && ! $request->hasFile('file_excel')) {
+            return redirect()->back()->with('error', 'Unggah minimal satu file (PDF atau Excel) untuk mengirim laporan.');
+        }
 
         $user = Auth::user();
 
@@ -38,18 +47,26 @@ class IndicatorResultController extends Controller
 
         $indicator = Indicator::findOrFail($indicator_id);
 
-        
         if ($indicator->satker_id !== $user->satker_id) {
             return redirect()->back()->with('error', 'Indicator ini bukan ditugaskan untuk satker Anda.');
         }
 
-        $filePath = $request->file('file_pdf')->store('uploads', 'public');
+        $filePathPdf = null;
+        if ($request->hasFile('file_pdf')) {
+            $filePathPdf = $request->file('file_pdf')->store('uploads', 'public');
+        }
+
+        $filePathExcel = null;
+        if ($request->hasFile('file_excel')) {
+            $filePathExcel = $request->file('file_excel')->store('uploads', 'public');
+        }
 
         IndicatorResult::create([
             'indicator_id' => $indicator_id,
             'satker_id' => $user->satker_id,
-            'file_pdf' => $filePath,
-            'status' => 'dikirim'
+            'file_pdf' => $filePathPdf,
+            'file_excel' => $filePathExcel,
+            'status' => 'dikirim',
         ]);
 
         NotificationController::notifyNewDocument($user->name, $indicator->judul ?? 'indikator');
@@ -59,8 +76,7 @@ class IndicatorResultController extends Controller
 
     /**
      * Admin menilai laporan yang masuk: mengisi nilai (0-100), mengubah status
-     * (diterima/direvisi), dan opsional catatan_admin. Sebelumnya kolom
-     * 'nilai' dan perubahan status tidak pernah dipakai di manapun.
+     * (diterima/direvisi), dan opsional catatan_admin.
      */
     public function updateStatus(Request $request, $id)
     {
@@ -80,7 +96,7 @@ class IndicatorResultController extends Controller
         $result->update($validated);
 
         NotificationController::notifyResultReviewed($result);
-        
+
         return redirect()->back()->with('success', 'Penilaian laporan berhasil disimpan.');
     }
 }

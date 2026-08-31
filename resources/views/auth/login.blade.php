@@ -56,7 +56,9 @@
         @if ($loginBgExists)
             <div class="absolute inset-0 bg-cover bg-center anim-fade-in"
                  style="background-image: url('{{ $loginBackgroundImage }}');"></div>
-            <div class="absolute inset-0 bg-gradient-to-r from-navy-950/10 via-navy-950/10 to-navy-950"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-navy-950/50 via-navy-950/20 to-navy-950"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-navy-950/30"></div>
+            <div class="absolute inset-0" style="background: radial-gradient(120% 90% at 15% 100%, rgba(200,155,60,0.18), transparent 60%);"></div>
         @endif
 
         <div class="absolute -top-32 -left-24 w-96 h-96 bg-gold-500/20 rounded-full blur-3xl anim-blob delay-1"></div>

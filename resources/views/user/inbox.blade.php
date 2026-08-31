@@ -55,6 +55,19 @@
         </div>
     @endif
 
+    <form method="GET" action="{{ route('user.inbox') }}" class="flex items-end gap-3 mb-4">
+        <div>
+            <label for="periode" class="block text-xs font-medium text-slate-500 mb-1.5">Periode</label>
+            <input type="month" id="periode" name="periode"
+                   value="{{ isset($periodeAktif) ? $periodeAktif->format('Y-m') : now()->format('Y-m') }}"
+                   class="h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+        </div>
+        <button type="submit"
+                class="h-10 px-4 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium transition">
+            Tampilkan
+        </button>
+    </form>
+
     <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 max-w-xl">
         @forelse ($indicators ?? [] as $indicator)
             @php $latestResult = $indicator->results->sortByDesc('created_at')->first(); @endphp
@@ -64,16 +77,51 @@
                         class="w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-slate-50">
                     <i class="ti ti-clipboard-list text-slate-400 text-lg shrink-0 mt-0.5"></i>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-slate-800">{{ $indicator->judul }}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="text-sm font-medium text-slate-800">{{ $indicator->judul }}</p>
+                            @if ($indicator->periode)
+                                <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500">
+                                    {{ \Carbon\Carbon::parse($indicator->periode)->translatedFormat('M Y') }}
+                                </span>
+                            @endif
+                        </div>
                         @if ($indicator->deskripsi)
                             <p class="text-xs text-slate-400 mt-0.5">{{ $indicator->deskripsi }}</p>
                         @endif
-                        @if ($indicator->file_pdf)
-                            <a href="{{ asset('storage/' . $indicator->file_pdf) }}" target="_blank"
-                               onclick="event.stopPropagation()"
-                               class="inline-flex items-center gap-1.5 text-xs text-navy-800 hover:underline mt-1.5">
-                                <i class="ti ti-paperclip text-sm"></i> Lihat lampiran dari admin
-                            </a>
+                        <div class="flex flex-wrap items-center gap-3 mt-1.5">
+                            @if ($indicator->file_pdf)
+                                <a href="{{ asset('storage/' . $indicator->file_pdf) }}" target="_blank"
+                                   onclick="event.stopPropagation()"
+                                   class="inline-flex items-center gap-1.5 text-xs text-navy-800 hover:underline">
+                                    <i class="ti ti-file-type-pdf text-red-500 text-sm"></i> Lampiran PDF dari admin
+                                </a>
+                            @endif
+                            @if ($indicator->file_excel)
+                                <a href="{{ asset('storage/' . $indicator->file_excel) }}" target="_blank"
+                                   onclick="event.stopPropagation()"
+                                   class="inline-flex items-center gap-1.5 text-xs text-navy-800 hover:underline">
+                                    <i class="ti ti-file-type-xls text-emerald-600 text-sm"></i> Lampiran Excel dari admin
+                                </a>
+                            @endif
+                        </div>
+
+                        @if ($latestResult)
+                            <div class="flex flex-wrap items-center gap-3 mt-1.5">
+                                @if ($latestResult->file_pdf)
+                                    <a href="{{ asset('storage/' . $latestResult->file_pdf) }}" target="_blank"
+                                       onclick="event.stopPropagation()"
+                                       class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:underline">
+                                        <i class="ti ti-file-type-pdf text-red-500 text-sm"></i> Laporan PDF saya
+                                    </a>
+                                @endif
+                                @if ($latestResult->file_excel)
+                                    <a href="{{ asset('storage/' . $latestResult->file_excel) }}" target="_blank"
+                                       onclick="event.stopPropagation()"
+                                       class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:underline">
+                                        <i class="ti ti-file-type-xls text-emerald-600 text-sm"></i> Laporan Excel saya
+                                    </a>
+                                @endif
+                            </div>
                         @endif
 
                         @if ($latestResult && !is_null($latestResult->nilai))
@@ -117,14 +165,36 @@
 
                         <div>
                             <label class="block text-xs font-medium text-slate-600 mb-1.5">
-                                File PDF laporan
+                                Laporan (PDF dan/atau Excel)
                                 @if ($latestResult)
                                     <span class="font-normal text-slate-400">(mengunggah ulang akan mengirim laporan baru)</span>
                                 @endif
                             </label>
-                            <input type="file" name="file_pdf" accept="application/pdf" required
-                                   class="w-full text-sm file:mr-3 file:h-9 file:px-3 file:rounded-lg file:border-0 file:bg-navy-900 file:text-white file:text-sm">
-                            <p class="text-xs text-slate-400 mt-1">Maksimal 5MB, format PDF.</p>
+                            <div class="flex items-start gap-3">
+                                <div>
+                                    <input type="file" id="file_pdf_{{ $indicator->id }}" name="file_pdf" accept="application/pdf" class="hidden"
+                                           onchange="sikoorUpdateFileLabel(this, 'file_pdf_label_{{ $indicator->id }}')">
+                                    <label for="file_pdf_{{ $indicator->id }}"
+                                           class="cursor-pointer flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2 border-dashed border-slate-300 hover:border-red-400 hover:bg-red-50 transition">
+                                        <i class="ti ti-file-type-pdf text-red-500 text-xl"></i>
+                                        <span class="text-[10px] text-slate-500 mt-0.5">PDF</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <input type="file" id="file_excel_{{ $indicator->id }}" name="file_excel" accept=".xlsx,.xls,.csv" class="hidden"
+                                           onchange="sikoorUpdateFileLabel(this, 'file_excel_label_{{ $indicator->id }}')">
+                                    <label for="file_excel_{{ $indicator->id }}"
+                                           class="cursor-pointer flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2 border-dashed border-slate-300 hover:border-emerald-400 hover:bg-emerald-50 transition">
+                                        <i class="ti ti-file-type-xls text-emerald-600 text-xl"></i>
+                                        <span class="text-[10px] text-slate-500 mt-0.5">Excel</span>
+                                    </label>
+                                </div>
+                                <div class="flex-1 text-xs text-slate-500 space-y-1 pt-1">
+                                    <p id="file_pdf_label_{{ $indicator->id }}">Belum ada file PDF dipilih</p>
+                                    <p id="file_excel_label_{{ $indicator->id }}">Belum ada file Excel dipilih</p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1.5">Unggah minimal satu file, maksimal 5MB per file.</p>
                         </div>
 
                         <button type="submit"
@@ -141,3 +211,16 @@
     </div>
 
 @endsection
+
+@push('scripts')
+<script>
+    function sikoorUpdateFileLabel(input, labelId) {
+        const label = document.getElementById(labelId);
+        if (!label) return;
+        const jenis = labelId.startsWith('file_pdf') ? 'PDF' : 'Excel';
+        label.textContent = input.files.length
+            ? input.files[0].name
+            : `Belum ada file ${jenis} dipilih`;
+    }
+</script>
+@endpush

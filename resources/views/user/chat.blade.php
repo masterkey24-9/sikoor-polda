@@ -11,7 +11,10 @@
 <div class="bg-white rounded-xl border border-slate-200 flex flex-col h-[calc(100vh-8rem)] overflow-hidden">
 
     <div class="h-14 border-b border-slate-200 flex items-center px-5">
-        <p class="text-sm font-medium text-slate-800">Admin Polda Sumbar</p>
+        <div>
+            <p class="text-sm font-medium text-slate-800">Admin Polda Sumbar</p>
+            <p class="text-xs" id="adminStatus"></p>
+        </div>
     </div>
 
     <div class="flex-1 overflow-y-auto p-5 space-y-3" id="chatMessages">
@@ -33,8 +36,59 @@
     // Echo.channel('chat.' + satkerId).listen('.message.sent', (e) => { ...append pesan... });
     const form = document.getElementById('chatForm');
     const messagesEl = document.getElementById('chatMessages');
+    const adminStatus = document.getElementById('adminStatus');
     const currentUserId = {{ auth()->id() }};
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    let lastTypingPing = 0;
+
+    async function postJson(url, body) {
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify(body || {}),
+        });
+    }
+
+    // ===== Heartbeat: tandai satker ini "online" selama halaman chat terbuka =====
+    function sendHeartbeat() {
+        postJson('{{ route('chat.heartbeat') }}').catch(() => {});
+    }
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 15000);
+
+    // ===== Status Admin: online + sedang mengetik, tiap 2 detik =====
+    async function refreshAdminStatus() {
+        try {
+            const res = await fetch('{{ route('chat.status') }}', { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+            const data = await res.json();
+
+            if (data.typing) {
+                adminStatus.textContent = 'Sedang mengetik...';
+                adminStatus.className = 'text-xs text-navy-800 italic';
+            } else if (data.online) {
+                adminStatus.textContent = 'Online';
+                adminStatus.className = 'text-xs text-emerald-600';
+            } else {
+                adminStatus.textContent = 'Offline';
+                adminStatus.className = 'text-xs text-slate-400';
+            }
+        } catch (err) { /* diamkan */ }
+    }
+    refreshAdminStatus();
+    setInterval(refreshAdminStatus, 2000);
+
+    // ===== Kirim sinyal "sedang mengetik", di-throttle biar nggak spam tiap huruf =====
+    form.pesan.addEventListener('input', () => {
+        const now = Date.now();
+        if (now - lastTypingPing < 2000) return;
+        lastTypingPing = now;
+        postJson('{{ route('chat.typing') }}', { satker_id: {{ auth()->user()->satker_id ?? 'null' }} }).catch(() => {});
+    });
 
     function renderBubble(msg) {
         const isMine = msg.user_id === currentUserId;

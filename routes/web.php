@@ -15,11 +15,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
     if (auth()->user()->role === 'admin') {
-        // ================= DASHBOARD RINGKAS (widget) =================
-        // Selalu bulan berjalan, semua satker, TANPA filter kompleks — ini cuma
-        // halaman "sekilas pandang". Untuk data lengkap yang bisa difilter
-        // (periode/satker/granularitas), lihat halaman "Monitoring IKPA"
-        // (route: monitoring.ikpa), yang tiap widget di sini punya link ke situ.
+        
         $awal = now()->startOfMonth();
         $akhir = now()->endOfMonth();
 
@@ -87,8 +83,7 @@ Route::get('/dashboard', function () {
         $persenPerluPerhatian = $totalSatker > 0 ? round($totalPerluPerhatian / $totalSatker * 100, 2) : 0;
         $persenKurang = $totalSatker > 0 ? round($totalKurang / $totalSatker * 100, 2) : 0;
 
-        // Mini trend: 6 bulan terakhir dari bulan berjalan, tanpa opsi granularitas/rentang
-        // (versi lengkap & bisa dipilih rentangnya ada di halaman Monitoring IKPA).
+        
         $trendMini = collect();
         for ($i = 5; $i >= 0; $i--) {
             $bulan = now()->copy()->subMonths($i);
@@ -108,9 +103,7 @@ Route::get('/dashboard', function () {
         $ikpaBulanLalu = $trendMini->count() > 1 ? $trendMini[$trendMini->count() - 2]['nilai'] : null;
         $selisihBulanLalu = ! is_null($ikpaBulanLalu) ? round($ikpaBulanIni - $ikpaBulanLalu, 2) : null;
 
-        // Mini "satker prioritas": 5 satker paling butuh perhatian (Kurang dulu, lalu
-        // Cukup), diurutkan nilai terendah. Versi lengkap (8 satker + kolom Status &
-        // Prioritas) ada di halaman Monitoring IKPA.
+        
         $satkerPrioritasMini = $satkerRingkas
             ->sort(function ($a, $b) {
                 $urutan = ['Kurang' => 0, 'Belum Dinilai' => 0, 'Cukup' => 1, 'Baik' => 2, 'Sangat Baik' => 3];
@@ -150,10 +143,7 @@ Route::get('/dashboard', function () {
         Route::post('/satkers', [SatkerController::class, 'store'])->name('satkers.store');
         Route::delete('/satkers/{id}', [SatkerController::class, 'destroy'])->name('satkers.destroy');
 
-        // ================= MONITORING IKPA (halaman detail) =================
-        // Ini isinya persis logic dashboard versi lengkap yang sebelumnya ada di /dashboard,
-        // dipindah ke sini karena /dashboard sekarang cuma widget ringkas. Semua filter
-        // (satker, granularitas, periode, trend_range) tetap sama seperti sebelumnya.
+        
         Route::get('/monitoring-ikpa', function () {
             // ================= PERIODE FILTER (multi-granularitas) =================
             // Granularitas: bulanan (default) | triwulan | semester | tahunan
@@ -161,8 +151,7 @@ Route::get('/dashboard', function () {
                 ? request('granularitas')
                 : 'bulanan';
         
-            // Bulan berjalan sebagai default untuk mode bulanan (dipakai juga sebagai
-            // nilai default input <month> di form, terlepas dari granularitas yang aktif).
+            
             $periodeFilter = request('periode') ?: now()->format('Y-m');
             $periodeAktif  = \Carbon\Carbon::createFromFormat('Y-m', $periodeFilter);
         
@@ -200,11 +189,7 @@ Route::get('/dashboard', function () {
                     break;
             }
         
-            // Jumlah titik yang ditampilkan di grafik tren & panjang tiap periode (dalam bulan), per granularitas.
-            // Didefinisikan di sini (bukan di dekat pemakaian grafik) karena juga dipakai untuk
-            // menentukan rentang "periode sebelumnya" saat menghitung prioritas pembinaan per satker.
-            // Jumlah titik default per granularitas. Khusus mode Bulanan, admin bisa override
-            // lewat filter cepat di kartu "Trend Nilai IKPA Rata-rata": 6 Bulan Terakhir (default)
+            
             // atau 12 Bulan Terakhir. Untuk mode triwulan/semester/tahunan, jumlah titik tren
             // tetap mengikuti default masing-masing (kurang relevan dipotong ke satuan bulan).
             $trendRange = (int) request('trend_range', 6);
@@ -232,9 +217,7 @@ Route::get('/dashboard', function () {
                     return $item;
                 });
         
-            // ================= DETAIL NILAI PER-SATKER UNTUK 5 INDIKATOR SPESIFIK =================
-            // Dipakai di kolom detail tabel "Monitoring IKPA Terbaru". Reuse $indicators yang
-            // relasi 'results'-nya sudah di-eager-load di atas, supaya tidak perlu query lagi.
+            
             $judulDetailTabel = ['Penyerapan Anggaran', 'Deviasi Halaman III DIPA', 'Penyelesaian Tagihan', 'Belanja Kontraktual', 'Pengelolaan UP/TUP'];
             $detailKosong = array_fill_keys($judulDetailTabel, null);
         
@@ -250,7 +233,7 @@ Route::get('/dashboard', function () {
         
             $satkers = \App\Models\Satker::orderBy('nama_satker')->get();
         
-            // Kategori nilai IKPA ala e-MONEV Kemenkeu: Sangat Baik / Baik / Cukup / Kurang
+            
             $kategoriIkpa = function (?float $nilai) {
                 if (is_null($nilai)) {
                     return ['label' => 'Belum Dinilai', 'badge' => 'bg-slate-100 text-slate-500'];
@@ -267,8 +250,7 @@ Route::get('/dashboard', function () {
                 return ['label' => 'Kurang', 'badge' => 'bg-red-50 text-red-600'];
             };
         
-            // Skor gabungan (progres tugas + rata-rata kualitas) satu satker untuk satu rentang tanggal.
-            // Dipakai untuk periode aktif MAUPUN periode sebelumnya (buat hitung trend & prioritas pembinaan).
+            
             $hitungSkorSatker = function (int $satkerId, \Carbon\Carbon $awal, \Carbon\Carbon $akhir) {
                 $tugasQuery = \App\Models\Indicator::where('satker_id', $satkerId)
                     ->whereBetween('periode', [$awal, $akhir]);
@@ -290,22 +272,18 @@ Route::get('/dashboard', function () {
                 if (! is_null($progres) && ! is_null($rataKualitas)) {
                     $skor = round(($progres * $bobotProgres) + ($rataKualitas * $bobotKualitas), 1);
                 } elseif (! is_null($progres)) {
-                    // Belum ada laporan yang dinilai admin sama sekali, sementara pakai progres saja
+                    
                     $skor = round($progres, 1);
                 }
         
                 return ['skor' => $skor, 'total_tugas' => $totalTugas, 'tugas_selesai' => $tugasSelesai];
             };
         
-            // Rentang periode sebelumnya (granularitas sama), dipakai untuk menghitung trend per satker.
+            
             $rangeAwalSebelumnya = $rangeAwal->copy()->subMonths($panjangBulanPeriode);
             $rangeAkhirSebelumnya = $rangeAwal->copy()->subDay()->endOfDay();
         
-            // Level prioritas pembinaan: kombinasi kategori nilai saat ini + tren dibanding periode sebelumnya.
-            // - Belum ada nilai sama sekali -> Tinggi (perlu dikejar supaya masuk laporan)
-            // - Kategori Kurang -> Tinggi
-            // - Kategori Cukup -> Sedang, naik ke Tinggi kalau nilainya turun signifikan (>= 5 poin)
-            // - Kategori Baik/Sangat Baik -> Rendah, naik ke Sedang kalau turun signifikan
+            
             $prioritasPembinaan = function (string $kategoriLabel, ?float $skorAkhir, ?float $skorSebelumnya) {
                 if (is_null($skorAkhir)) {
                     return ['label' => 'Tinggi', 'badge' => 'bg-red-50 text-red-600'];
@@ -386,9 +364,7 @@ Route::get('/dashboard', function () {
             $totalSatker = $satkerPerformance->count();
             $rataRataKinerja = $satkerPerformance->whereNotNull('nilai')->avg('nilai');
         
-            // ================= DAFTAR SATKER PRIORITAS PEMBINAAN =================
-            // Diurutkan: prioritas Tinggi dulu, lalu Sedang, lalu Rendah; dalam grup yang sama,
-            // nilai IKPA terendah (paling butuh perhatian) ditampilkan lebih dulu.
+            
             $urutanPrioritas = ['Tinggi' => 0, 'Sedang' => 1, 'Rendah' => 2];
             $satkerPrioritas = $satkerPerformance
                 ->sort(function ($a, $b) use ($urutanPrioritas) {
@@ -402,7 +378,7 @@ Route::get('/dashboard', function () {
                 ->values()
                 ->take(8);
         
-            // ================= TREND, MENGIKUTI GRANULARITAS AKTIF =================
+            
             $labelPeriode = function (\Carbon\Carbon $awal) use ($granularitas) {
                 return match ($granularitas) {
                     'triwulan' => 'TW' . ceil($awal->month / 3) . ' ' . $awal->year,
@@ -412,8 +388,7 @@ Route::get('/dashboard', function () {
                 };
             };
         
-            // Trend dihitung mundur dari periode aktif (bukan dari now()), supaya selalu
-            // sinkron dengan filter yang dipilih admin di form.
+            
             $trendBulanan = collect();
             for ($i = $jumlahTitikTren - 1; $i >= 0; $i--) {
                 $awalPeriode  = $rangeAwal->copy()->subMonths($panjangBulanPeriode * $i);
@@ -431,17 +406,17 @@ Route::get('/dashboard', function () {
                 ]);
             }
         
-            // Perbandingan antarperiode: periode aktif vs periode sebelumnya (granularitas sama)
+            
             $ikpaPeriodeIni = $trendBulanan->last()['nilai'] ?? 0;
             $ikpaPeriodeSebelumnya = $trendBulanan->count() > 1 ? $trendBulanan[$trendBulanan->count() - 2]['nilai'] : null;
             $selisihBulanLalu = ! is_null($ikpaPeriodeSebelumnya) ? round($ikpaPeriodeIni - $ikpaPeriodeSebelumnya, 2) : null;
         
-            // Ringkasan kategori nilai IKPA satker (kartu atas & donut "Kategori Nilai IKPA Satker")
+            
             $totalSangatBaik = $satkerPerformance->where('kategori_label', 'Sangat Baik')->count();
             $totalBaik = $satkerPerformance->where('kategori_label', 'Baik')->count();
             $totalCukup = $satkerPerformance->where('kategori_label', 'Cukup')->count();
             $totalKurang = $satkerPerformance->where('kategori_label', 'Kurang')->count();
-            // "Perlu perhatian" = nilai di bawah kategori Baik (Cukup + Kurang)
+            
             $totalPerluPerhatian = $totalCukup + $totalKurang;
         
             $persenSangatBaik = $totalSatker > 0 ? round($totalSangatBaik / $totalSatker * 100, 2) : 0;
@@ -450,21 +425,13 @@ Route::get('/dashboard', function () {
             $persenKurang = $totalSatker > 0 ? round($totalKurang / $totalSatker * 100, 2) : 0;
             $persenPerluPerhatian = $totalSatker > 0 ? round($totalPerluPerhatian / $totalSatker * 100, 2) : 0;
         
-            // ================= MONITORING INDIKATOR IKPA (per jenis indikator) =================
-            // Urutan baku 9 jenis indikator IKPA, supaya tampilannya konsisten setiap saat
-            // (tidak lompat-lompat mengikuti nilai). Judul yang tidak ada di daftar ini otomatis
-            // ditaruh di bawah, urut abjad.
+            
             $urutanIndikatorBaku = [
                 'Revisi DIPA', 'Deviasi Halaman III DIPA', 'Penyerapan Anggaran', 'Belanja Kontraktual',
                 'Penyelesaian Tagihan', 'Pengelolaan UP/TUP', 'Dispensasi SPM', 'Retur SP2D', 'Capaian Output',
             ];
         
-            // Traffic-light 3 warna sesuai kebutuhan panel ini (bukan 4 kategori IKPA):
-            // Hijau = sesuai target, Kuning = perlu perhatian, Merah = perlu tindak lanjut segera,
-            // abu-abu = belum ada laporan yang dinilai untuk jenis indikator ini di periode aktif.
-            // Traffic-light 3 tingkat untuk panel ini: label pakai kategori (Baik/Cukup/Kurang),
-            // warna bar & badge tetap ikut logic yang sama (Sangat Baik & Baik digabung jadi
-            // "Baik" secara visual, karena panel ini cuma butuh 3 warna, bukan 4 kategori penuh).
+            
             $trafficLightIndikator = function (?float $nilai) use ($kategoriIkpa) {
                 $label = $kategoriIkpa($nilai)['label'];
         
@@ -476,14 +443,8 @@ Route::get('/dashboard', function () {
                 };
             };
         
-            // Semua jenis indikator yang tugasnya dibuat untuk periode/satker aktif — termasuk yang
-            // BELUM ada laporan dinilai sama sekali, supaya panel ini menunjukkan progress semua
-            // 9 jenis indikator, bukan cuma yang kebetulan sudah ada nilainya.
-            $judulIndikatorAktif = \App\Models\Indicator::whereBetween('periode', [$rangeAwal, $rangeAkhir])
-                ->when(request()->filled('satker_id'), fn ($q) => $q->where('satker_id', request('satker_id')))
-                ->select('judul')
-                ->distinct()
-                ->pluck('judul');
+            
+            $judulIndikatorAktif = collect(config('sikoor.jenis_indikator', []));
         
             $rataPerJudul = \App\Models\IndicatorResult::whereNotNull('indicator_results.nilai')
                 ->join('indicators', 'indicator_results.indicator_id', '=', 'indicators.id')
@@ -513,10 +474,7 @@ Route::get('/dashboard', function () {
                 })
                 ->values();
         
-            // Generate notifikasi otomatis (penurunan nilai, deviasi anggaran, keterlambatan
-            // tagihan, batas waktu tindak lanjut) berdasarkan data periode aktif. Hanya dijalankan
-            // saat tidak sedang filter satker tertentu, supaya pengecekannya selalu mencakup
-            // seluruh satker (bukan cuma satker yang kebetulan sedang difilter).
+            
             if (! request()->filled('satker_id')) {
                 \App\Http\Controllers\NotificationController::generateNotifikasiIkpa(
                     $satkerPerformance, $nilaiPerIndikator, $indicators, $rangeAkhir, $labelPeriodeAktif
@@ -558,10 +516,7 @@ Route::get('/dashboard', function () {
         })->name('monitoring.ikpa');
 
 
-        // Cetak laporan monitoring IKPA satu satker, untuk periode yang lagi aktif di dashboard.
-        // Logic resolusi periode sengaja diduplikasi dari closure /dashboard (bukan di-extract ke
-        // helper/service) supaya route ini berdiri sendiri; kalau nanti mau dirapikan, ini
-        // kandidat pertama untuk dipindah ke Service class bersama.
+       
         Route::get('/monitoring/cetak/{satker}', function (\App\Models\Satker $satker) {
             $granularitas = in_array(request('granularitas'), ['bulanan', 'triwulan', 'semester', 'tahunan'])
                 ? request('granularitas') : 'bulanan';
@@ -625,13 +580,27 @@ Route::get('/dashboard', function () {
     Route::get('/messages/data', [MessageController::class, 'data'])->name('messages.data');
     Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
 
+    // Status online & indikator "sedang mengetik" untuk Live chat (cache-based, polling).
+    Route::post('/chat/heartbeat', [MessageController::class, 'heartbeat'])->name('chat.heartbeat');
+    Route::post('/chat/typing', [MessageController::class, 'typing'])->name('chat.typing');
+    Route::get('/chat/status', [MessageController::class, 'status'])->name('chat.status');
+    Route::get('/chat/online-satkers', [MessageController::class, 'onlineSatkers'])->name('chat.onlineSatkers');
+
     Route::get('/notifications/data', [NotificationController::class, 'data'])->name('notifications.data');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
 
     Route::get('/inbox', function () {
+    // Periode aktif: default bulan berjalan, bisa difilter satker lewat dropdown,
+    // supaya alurnya konsisten dengan cara admin memfilter periode di Monitoring IKPA.
+    $periodeFilter = request('periode') ?: now()->format('Y-m');
+    $periodeAktif = \Carbon\Carbon::createFromFormat('Y-m', $periodeFilter);
+    $rangeAwal = $periodeAktif->copy()->startOfMonth();
+    $rangeAkhir = $periodeAktif->copy()->endOfMonth();
+
     $indicators = \App\Models\Indicator::with('results')
         ->where('satker_id', auth()->user()->satker_id)
+        ->whereBetween('periode', [$rangeAwal, $rangeAkhir])
         ->latest()
         ->get();
 
@@ -644,7 +613,7 @@ Route::get('/dashboard', function () {
 
     $terkunci = $peringatanAktif->contains(fn ($p) => $p->sudahLewatBatasWaktu());
 
-    return view('user.inbox', compact('indicators', 'peringatanAktif', 'terkunci'));
+    return view('user.inbox', compact('indicators', 'peringatanAktif', 'terkunci', 'periodeAktif'));
 })->name('user.inbox');
 
     Route::get('/chat', function () {

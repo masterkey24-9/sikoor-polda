@@ -22,8 +22,11 @@
                         class="satker-item w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 border-b border-slate-100 {{ $i === 0 ? 'bg-slate-50' : '' }}"
                         data-satker-id="{{ $satker->id }}"
                         data-satker-nama="{{ $satker->nama_satker }}">
-                    <div class="w-9 h-9 rounded-full bg-navy-900 text-white flex items-center justify-center text-xs font-medium shrink-0">
-                        {{ strtoupper(substr($satker->nama_satker, 0, 2)) }}
+                    <div class="relative shrink-0">
+                        <div class="w-9 h-9 rounded-full bg-navy-900 text-white flex items-center justify-center text-xs font-medium">
+                            {{ strtoupper(substr($satker->nama_satker, 0, 2)) }}
+                        </div>
+                        <span class="online-dot absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white {{ $satker->is_online ? 'bg-emerald-500' : 'bg-slate-300' }}"></span>
                     </div>
                     <div class="min-w-0 flex-1">
                         <p class="text-sm font-medium text-slate-800 truncate">{{ $satker->nama_satker }}</p>
@@ -39,7 +42,10 @@
     {{-- Jendela chat --}}
     <div class="flex-1 flex flex-col min-w-0">
         <div class="h-14 border-b border-slate-200 flex items-center px-5">
-            <p class="text-sm font-medium text-slate-800" id="activeSatkerName">Pilih Satker di sebelah kiri</p>
+            <div>
+                <p class="text-sm font-medium text-slate-800" id="activeSatkerName">Pilih Satker di sebelah kiri</p>
+                <p class="text-xs" id="activeSatkerStatus"></p>
+            </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-5 space-y-3" id="chatMessages">
@@ -63,6 +69,7 @@
     const form = document.getElementById('chatForm');
     const messagesEl = document.getElementById('chatMessages');
     const activeSatkerName = document.getElementById('activeSatkerName');
+    const activeSatkerStatus = document.getElementById('activeSatkerStatus');
     const inputPesan = form.pesan;
     const submitBtn = form.querySelector('button[type="submit"]');
     const currentUserId = {{ auth()->id() }};
@@ -70,6 +77,79 @@
 
     let activeSatkerId = null;
     let pollTimer = null;
+    let statusPollTimer = null;
+    let lastTypingPing = 0;
+
+    async function postJson(url, body) {
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify(body || {}),
+        });
+    }
+
+    // ===== Heartbeat: tandai admin ini "online" selama halaman chat terbuka =====
+    function sendHeartbeat() {
+        postJson('{{ route('chat.heartbeat') }}').catch(() => {});
+    }
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 15000);
+
+    // ===== Titik hijau/abu di daftar satker: refresh tiap 10 detik =====
+    async function refreshOnlineDots() {
+        try {
+            const res = await fetch('{{ route('chat.onlineSatkers') }}', { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+            const data = await res.json();
+            const onlineIds = (data.online || []).map(String);
+
+            document.querySelectorAll('.satker-item').forEach(btn => {
+                const dot = btn.querySelector('.online-dot');
+                if (!dot) return;
+                const isOnline = onlineIds.includes(String(btn.dataset.satkerId));
+                dot.classList.toggle('bg-emerald-500', isOnline);
+                dot.classList.toggle('bg-slate-300', !isOnline);
+            });
+        } catch (err) { /* diamkan, coba lagi di siklus berikutnya */ }
+    }
+    refreshOnlineDots();
+    setInterval(refreshOnlineDots, 10000);
+
+    // ===== Status thread aktif: online + sedang mengetik, tiap 2 detik =====
+    async function refreshActiveStatus() {
+        if (!activeSatkerId) return;
+        try {
+            const res = await fetch(`{{ route('chat.status') }}?satker_id=${activeSatkerId}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+
+            if (data.typing) {
+                activeSatkerStatus.textContent = 'Sedang mengetik...';
+                activeSatkerStatus.className = 'text-xs text-navy-800 italic';
+            } else if (data.online) {
+                activeSatkerStatus.textContent = 'Online';
+                activeSatkerStatus.className = 'text-xs text-emerald-600';
+            } else {
+                activeSatkerStatus.textContent = 'Offline';
+                activeSatkerStatus.className = 'text-xs text-slate-400';
+            }
+        } catch (err) { /* diamkan */ }
+    }
+
+    // ===== Kirim sinyal "sedang mengetik", di-throttle biar nggak spam tiap huruf =====
+    inputPesan.addEventListener('input', () => {
+        if (!activeSatkerId) return;
+        const now = Date.now();
+        if (now - lastTypingPing < 2000) return;
+        lastTypingPing = now;
+        postJson('{{ route('chat.typing') }}', { satker_id: activeSatkerId }).catch(() => {});
+    });
 
     function renderBubble(msg) {
         const isMine = msg.user_id === currentUserId;
@@ -107,6 +187,7 @@
     function selectSatker(id, nama, btnEl) {
         activeSatkerId = id;
         activeSatkerName.textContent = nama;
+        activeSatkerStatus.textContent = '';
         inputPesan.disabled = false;
         submitBtn.disabled = false;
 
@@ -119,6 +200,10 @@
         if (pollTimer) clearInterval(pollTimer);
         // Polling sederhana tiap 5 detik. Ganti dengan Laravel Echo + broadcasting untuk real-time sebenarnya.
         pollTimer = setInterval(loadMessages, 5000);
+
+        if (statusPollTimer) clearInterval(statusPollTimer);
+        refreshActiveStatus();
+        statusPollTimer = setInterval(refreshActiveStatus, 2000);
     }
 
     document.querySelectorAll('.satker-item').forEach(btn => {
