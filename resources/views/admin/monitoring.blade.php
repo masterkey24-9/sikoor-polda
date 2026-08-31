@@ -56,7 +56,7 @@
             </p>
         </div>
         <div class="bg-white rounded-xl p-5 border border-slate-200">
-            <p class="text-sm text-slate-500 mb-1">Perlu perhatian</p>
+            <p class="text-sm text-slate-500 mb-1">Kategori merah</p>
             <p class="text-2xl font-display font-semibold text-red-600">{{ $totalPerluPerhatian ?? 0 }}</p>
         </div>
     </div>
@@ -78,15 +78,15 @@
                 @forelse ($satkerPerformance ?? [] as $sp)
                     @php
                         $badgeClass = match ($sp->status) {
-                            'Baik' => 'bg-emerald-50 text-emerald-700',
-                            'Cukup' => 'bg-gold-500/15 text-navy-900',
-                            'Perlu Perhatian' => 'bg-red-50 text-red-700',
+                            'Hijau' => 'bg-emerald-50 text-emerald-700',
+                            'Kuning' => 'bg-amber-50 text-amber-700',
+                            'Merah' => 'bg-red-50 text-red-700',
                             default => 'bg-slate-100 text-slate-500',
                         };
                         $barClass = match ($sp->status) {
-                            'Baik' => 'bg-emerald-500',
-                            'Cukup' => 'bg-gold-500',
-                            'Perlu Perhatian' => 'bg-red-500',
+                            'Hijau' => 'bg-emerald-500',
+                            'Kuning' => 'bg-amber-500',
+                            'Merah' => 'bg-red-500',
                             default => 'bg-slate-300',
                         };
                     @endphp

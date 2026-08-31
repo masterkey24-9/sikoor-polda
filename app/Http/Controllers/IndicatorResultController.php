@@ -58,7 +58,14 @@ class IndicatorResultController extends Controller
             'status' => 'required|in:diterima,direvisi',
             'nilai' => 'required|integer|min:0|max:100',
             'catatan_admin' => 'nullable|string|max:1000',
+            'tindak_lanjut' => 'nullable|string|max:1000',
         ]);
+
+        // Kalau admin tidak mengisi/mengubah kolom tindak lanjut, pakai saran
+        // otomatis berdasarkan kategori warna nilai (Hijau/Kuning/Merah).
+        if (empty($validated['tindak_lanjut'])) {
+            $validated['tindak_lanjut'] = IndicatorResult::suggestTindakLanjut($validated['nilai']);
+        }
 
         $result = IndicatorResult::findOrFail($id);
         $result->update($validated);

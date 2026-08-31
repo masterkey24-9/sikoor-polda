@@ -83,9 +83,9 @@ Route::get('/dashboard', function () {
 
                 $status = 'Belum ada tugas';
                 if (!is_null($skorAkhir)) {
-                    $ambangBaik = config('sikoor.ambang_baik', 85);
-                    $ambangCukup = config('sikoor.ambang_cukup', 60);
-                    $status = $skorAkhir >= $ambangBaik ? 'Baik' : ($skorAkhir >= $ambangCukup ? 'Cukup' : 'Perlu Perhatian');
+                    $ambangHijau = config('sikoor.ambang_hijau', 95);
+                    $ambangKuning = config('sikoor.ambang_kuning', 89);
+                    $status = $skorAkhir >= $ambangHijau ? 'Hijau' : ($skorAkhir >= $ambangKuning ? 'Kuning' : 'Merah');
                 }
 
                 return (object) [
@@ -101,7 +101,7 @@ Route::get('/dashboard', function () {
 
         $totalSatker = $satkerPerformance->count();
         $rataRataKinerja = $satkerPerformance->whereNotNull('nilai')->avg('nilai');
-        $totalPerluPerhatian = $satkerPerformance->where('status', 'Perlu Perhatian')->count();
+        $totalPerluPerhatian = $satkerPerformance->where('status', 'Merah')->count();
 
         return view('admin.monitoring', compact(
             'indicators', 'satkers', 'satkerPerformance',
@@ -130,6 +130,10 @@ Route::get('/dashboard', function () {
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::get('/messages/data', [MessageController::class, 'data'])->name('messages.data');
     Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+    Route::get('/messages/online-status', [MessageController::class, 'onlineStatus'])->name('messages.onlineStatus');
+    Route::get('/messages/live-status', [MessageController::class, 'liveStatus'])->name('messages.liveStatus');
+    Route::post('/messages/typing', [MessageController::class, 'typing'])->name('messages.typing');
+    Route::post('/messages/broadcast', [MessageController::class, 'broadcastStore'])->name('messages.broadcast');
 
     Route::get('/notifications/data', [NotificationController::class, 'data'])->name('notifications.data');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');

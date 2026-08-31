@@ -43,6 +43,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'last_seen_at' => 'datetime',
     ];
 
     /**
@@ -51,5 +52,29 @@ class User extends Authenticatable
     public function satker()
     {
         return $this->belongsTo(Satker::class);
+    }
+
+    /**
+     * Dianggap "online" kalau ada aktivitas dalam N detik terakhir.
+     * (di-update oleh middleware UpdateLastSeen tiap request/polling)
+     */
+    public function isOnline(int $thresholdSeconds = 60): bool
+    {
+        return $this->last_seen_at !== null
+            && $this->last_seen_at->gt(now()->subSeconds($thresholdSeconds));
+    }
+
+    /**
+     * Label untuk ditampilkan di UI: "Online" atau "Terakhir online 5 menit lalu".
+     */
+    public function lastSeenLabel(): string
+    {
+        if (! $this->last_seen_at) {
+            return 'Belum pernah online';
+        }
+
+        return $this->isOnline()
+            ? 'Online'
+            : 'Terakhir online ' . $this->last_seen_at->diffForHumans();
     }
 }

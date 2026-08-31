@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Message;
 use App\Models\Satker;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class MessageController extends Controller
 {
@@ -108,5 +110,130 @@ class MessageController extends Controller
         \App\Http\Controllers\NotificationController::notifyNewMessage($user, $satkerId, $satkerNama, $request->pesan);
 
         return response()->json(['status' => 'Pesan terkirim!', 'message' => $message->load('user:id,name,role')]);
+    }
+
+    /**
+     * Status online + "terakhir online" untuk SEMUA satker sekaligus.
+     * Dipakai admin untuk menampilkan indikator di daftar satker (sidebar kiri).
+     */
+    public function onlineStatus()
+    {
+        $satkers = Satker::with('user')->get()->map(function ($satker) {
+            $user = $satker->user;
+
+            return [
+                'satker_id' => $satker->id,
+                'online' => $user?->isOnline() ?? false,
+                'last_seen_label' => $user?->lastSeenLabel() ?? 'Belum pernah online',
+            ];
+        });
+
+        return response()->json($satkers);
+    }
+
+    /**
+     * Status "live" untuk thread yang sedang dibuka: online/offline lawan bicara
+     * + apakah lawan bicara sedang mengetik. Di-poll berkala (lebih sering
+     * daripada pesan) supaya balon "sedang mengetik..." terasa responsif.
+     */
+    public function liveStatus(Request $request)
+    {
+        $user = Auth::user();
+
+        if ($user->role === 'admin') {
+            $request->validate([
+                'satker_id' => 'required|exists:satkers,id',
+            ]);
+            $satkerId = $request->query('satker_id');
+            $opponent = Satker::find($satkerId)?->user;
+            $typingKey = "typing:satker:{$satkerId}";
+
+            return response()->json([
+                'online' => $opponent?->isOnline() ?? false,
+                'last_seen_label' => $opponent?->lastSeenLabel() ?? 'Belum pernah online',
+                'typing' => (bool) Cache::get($typingKey, false),
+            ]);
+        }
+
+        // Role satker: lawan bicaranya adalah "Admin" (bisa siapa saja dari akun admin).
+        $satkerId = $user->satker_id;
+        $typingKey = "typing:admin:{$satkerId}";
+        $admin = User::where('role', 'admin')->orderByDesc('last_seen_at')->first();
+
+        return response()->json([
+            'online' => $admin?->isOnline() ?? false,
+            'last_seen_label' => $admin?->lastSeenLabel() ?? 'Belum pernah online',
+            'typing' => (bool) Cache::get($typingKey, false),
+        ]);
+    }
+
+    /**
+     * Dipanggil dari JS setiap kali user mengetik di kolom pesan.
+     * Menyimpan flag "sedang mengetik" sebentar (3 detik) di cache,
+     * lalu otomatis hilang kalau berhenti mengetik.
+     */
+    public function typing(Request $request)
+    {
+        $user = Auth::user();
+
+        if ($user->role === 'admin') {
+            $request->validate([
+                'satker_id' => 'required|exists:satkers,id',
+            ]);
+            $key = "typing:admin:{$request->satker_id}";
+        } else {
+            if (! $user->satker_id) {
+                return response()->json(['message' => 'Akun ini belum terhubung ke Satker manapun.'], 422);
+            }
+            $key = "typing:satker:{$user->satker_id}";
+        }
+
+        Cache::put($key, true, now()->addSeconds(3));
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    /**
+     * Kirim satu pesan yang sama ke SEMUA satker sekaligus (broadcast admin).
+     * Setiap satker tetap dapat baris pesan masing-masing di thread-nya sendiri
+     * (tabel `messages` tidak berubah struktur), jadi tetap kompatibel dengan
+     * fitur notifikasi & event realtime yang sudah ada per-thread.
+     */
+    public function broadcastStore(Request $request)
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'admin') {
+            return response()->json(['message' => 'Hanya admin yang bisa mengirim pesan ke semua satker.'], 403);
+        }
+
+        $request->validate([
+            'pesan' => 'required|string|max:1000',
+        ]);
+
+        $satkers = Satker::all();
+        $terkirim = 0;
+
+        foreach ($satkers as $satker) {
+            $message = Message::create([
+                'user_id' => $user->id,
+                'satker_id' => $satker->id,
+                'pesan' => $request->pesan,
+            ]);
+
+            // Event broadcast realtime per-thread, sama seperti pengiriman pesan biasa.
+            event(new \App\Events\MessageSent($message));
+
+            \App\Http\Controllers\NotificationController::notifyNewMessage(
+                $user, $satker->id, $satker->nama_satker, $request->pesan
+            );
+
+            $terkirim++;
+        }
+
+        return response()->json([
+            'status' => "Pesan terkirim ke {$terkirim} satker.",
+            'pesan' => $request->pesan,
+        ]);
     }
 }

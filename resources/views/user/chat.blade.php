@@ -8,10 +8,16 @@
 @endsection
 
 @section('content')
-<div class="bg-white rounded-xl border border-slate-200 flex flex-col h-[calc(100vh-8rem)] overflow-hidden">
 
-    <div class="h-14 border-b border-slate-200 flex items-center px-5">
+<a href="{{ route('user.inbox') }}" class="inline-flex items-center gap-1.5 text-sm text-navy-800 hover:underline mb-4">
+    <i class="ti ti-arrow-left text-base"></i> Kembali ke inbox
+</a>
+
+<div class="bg-white rounded-xl border border-slate-200 flex flex-col h-[calc(100vh-10.5rem)] overflow-hidden">
+
+    <div class="h-14 border-b border-slate-200 flex flex-col justify-center px-5">
         <p class="text-sm font-medium text-slate-800">Admin Polda Sumbar</p>
+        <p class="text-xs text-slate-400" id="adminStatus">&nbsp;</p>
     </div>
 
     <div class="flex-1 overflow-y-auto p-5 space-y-3" id="chatMessages">
@@ -33,8 +39,72 @@
     // Echo.channel('chat.' + satkerId).listen('.message.sent', (e) => { ...append pesan... });
     const form = document.getElementById('chatForm');
     const messagesEl = document.getElementById('chatMessages');
+    const inputPesan = form.pesan;
     const currentUserId = {{ auth()->id() }};
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    let typingTimeout = null;
+    let opponentTypingBubble = null;
+
+    // Status online/last-seen Admin + apakah Admin sedang mengetik, di-poll tiap 2 detik.
+    async function loadLiveStatus() {
+        try {
+            const res = await fetch('{{ route('messages.liveStatus') }}', {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+
+            const statusEl = document.getElementById('adminStatus');
+            statusEl.textContent = data.typing
+                ? 'Sedang mengetik...'
+                : (data.online ? 'Online' : data.last_seen_label);
+            statusEl.classList.toggle('text-navy-800', data.typing);
+            statusEl.classList.toggle('italic', data.typing);
+            statusEl.classList.toggle('text-green-600', !data.typing && data.online);
+            statusEl.classList.toggle('text-slate-400', !data.typing && !data.online);
+
+            renderTypingBubble(data.typing);
+        } catch (err) {
+            // Diamkan, coba lagi di polling berikutnya.
+        }
+    }
+
+    function renderTypingBubble(isTyping) {
+        if (isTyping && !opponentTypingBubble) {
+            opponentTypingBubble = document.createElement('div');
+            opponentTypingBubble.className = 'flex justify-start';
+            opponentTypingBubble.innerHTML = `
+                <div class="bg-slate-100 text-slate-400 text-sm rounded-2xl rounded-bl-sm px-4 py-2.5 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style="animation-delay:0ms"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style="animation-delay:150ms"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style="animation-delay:300ms"></span>
+                </div>`;
+            messagesEl.appendChild(opponentTypingBubble);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        } else if (!isTyping && opponentTypingBubble) {
+            opponentTypingBubble.remove();
+            opponentTypingBubble = null;
+        }
+    }
+
+    // Kirim sinyal "saya sedang mengetik" ke server, dibatasi tiap 1.5 detik saat mengetik.
+    function notifyTyping() {
+        if (typingTimeout) return;
+
+        fetch('{{ route('messages.typing') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+        }).catch(() => {});
+
+        typingTimeout = setTimeout(() => { typingTimeout = null; }, 1500);
+    }
+
+    inputPesan.addEventListener('input', notifyTyping);
 
     function renderBubble(msg) {
         const isMine = msg.user_id === currentUserId;
@@ -56,6 +126,7 @@
             const data = await res.json();
 
             messagesEl.innerHTML = '';
+            opponentTypingBubble = null; // elemen lama sudah ikut terhapus bareng innerHTML di atas
             if (data.length === 0) {
                 messagesEl.innerHTML = '<p class="text-center text-xs text-slate-400">Belum ada pesan.</p>';
                 return;
@@ -97,6 +168,10 @@
     loadMessages();
     // Polling sederhana tiap 5 detik. Ganti dengan Laravel Echo + broadcasting untuk real-time sebenarnya.
     setInterval(loadMessages, 5000);
+
+    // Status online Admin + sedang mengetik, di-poll lebih sering (2 detik) biar responsif.
+    loadLiveStatus();
+    setInterval(loadLiveStatus, 2000);
 </script>
 @endpush
 @endsection
