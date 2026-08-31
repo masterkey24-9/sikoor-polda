@@ -36,5 +36,8 @@ return [
 
     'ambang_baik' => 85,
     'ambang_cukup' => 60,
+    'ikpa_ambang_sangat_baik' => 90,
+    'ikpa_ambang_baik' => 80,
+    'ikpa_ambang_cukup' => 70,
 
 ];
