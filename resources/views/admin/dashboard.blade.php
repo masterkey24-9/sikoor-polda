@@ -126,6 +126,30 @@
         &middot; <a href="{{ route('monitoring.ikpa') }}" class="text-navy-800 font-medium hover:underline">Lihat tabel lengkap →</a>
     </p>
 
+    {{-- ================= SPOTLIGHT: SATKER TERBAIK (HIJAU 95-100) ================= --}}
+    <div class="rounded-xl p-5 mb-6 border {{ $satkerTerbaikHijau ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-white' : 'border-slate-200 bg-white' }} flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 {{ $satkerTerbaikHijau ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400' }}">
+            <i class="ti ti-trophy text-2xl"></i>
+        </div>
+
+        @if ($satkerTerbaikHijau)
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Satker Terbaik &middot; Kategori Hijau (95&ndash;100)</p>
+                <p class="text-lg font-display font-bold text-navy-950 truncate">{{ $satkerTerbaikHijau->nama_satker }}</p>
+                <p class="text-xs text-slate-500">Periode {{ $labelPeriodeAktif ?? '-' }}</p>
+            </div>
+            <div class="text-right shrink-0">
+                <p class="text-3xl font-display font-extrabold text-emerald-600">{{ number_format($satkerTerbaikHijau->nilai, 2) }}</p>
+                <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">Hijau</span>
+            </div>
+        @else
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Satker Terbaik &middot; Kategori Hijau (95&ndash;100)</p>
+                <p class="text-sm text-slate-500 mt-0.5">Belum ada satker yang mencapai nilai 95&ndash;100 pada periode {{ $labelPeriodeAktif ?? 'ini' }}.</p>
+            </div>
+        @endif
+    </div>
+
     {{-- ================= 1. KARTU RINGKASAN ================= --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
 
@@ -286,6 +310,103 @@
             </table>
         </div>
 
+    </div>
+
+    {{-- ================= PERINGKAT SATKER TERBAIK (HIJAU 95-100) ================= --}}
+    <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <p class="text-sm font-medium text-slate-700">Peringkat Satker Terbaik</p>
+                <p class="text-[11px] text-slate-400">Kategori Hijau (95&ndash;100), diurutkan dari nilai tertinggi</p>
+            </div>
+            <a href="{{ route('monitoring.ikpa') }}"
+               class="shrink-0 inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-xs font-semibold transition">
+                Lihat Semua
+                <i class="ti ti-arrow-right text-sm"></i>
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm min-w-[1180px]">
+                <thead>
+                    <tr class="text-xs text-slate-400 border-b border-slate-100">
+                        <th class="text-left font-medium pb-2 w-10">Peringkat</th>
+                        <th class="text-left font-medium pb-2">Satker</th>
+                        <th class="text-right font-medium pb-2">Nilai IKPA</th>
+                        <th class="text-left font-medium pb-2 pl-4">Kategori</th>
+                        <th class="text-right font-medium pb-2">% Penyerapan Anggaran</th>
+                        <th class="text-right font-medium pb-2">Deviasi Hal. III DIPA</th>
+                        <th class="text-right font-medium pb-2">Penyelesaian Tagihan</th>
+                        <th class="text-right font-medium pb-2">Belanja Kontraktual</th>
+                        <th class="text-right font-medium pb-2">Pengelolaan UP/TUP</th>
+                        <th class="text-left font-medium pb-2 pl-4">Update Terakhir</th>
+                        <th class="text-center font-medium pb-2">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @forelse (($satkerRankingHijau ?? collect()) as $sp)
+                        <tr>
+                            <td class="py-2.5">
+                                @php
+                                    $medali = [1 => 'bg-gold-500 text-navy-950', 2 => 'bg-slate-300 text-slate-700', 3 => 'bg-amber-700 text-white'][$loop->iteration] ?? 'bg-slate-100 text-slate-500';
+                                @endphp
+                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold {{ $medali }}">
+                                    {{ $loop->iteration }}
+                                </span>
+                            </td>
+                            <td class="py-2.5 text-slate-700 font-medium">{{ $sp->nama_satker }}</td>
+                            <td class="py-2.5 text-right font-semibold text-emerald-600">
+                                {{ number_format($sp->nilai, 2) }}
+                            </td>
+                            <td class="py-2.5 pl-4">
+                                <span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-600">
+                                    Hijau
+                                </span>
+                            </td>
+                            <td class="py-2.5 text-right text-slate-600">
+                                {{ !is_null($sp->detail_indikator['Penyerapan Anggaran']) ? number_format($sp->detail_indikator['Penyerapan Anggaran'], 2) . '%' : '-' }}
+                            </td>
+                            <td class="py-2.5 text-right text-slate-600">
+                                {{ !is_null($sp->detail_indikator['Deviasi Halaman III DIPA']) ? number_format($sp->detail_indikator['Deviasi Halaman III DIPA'], 2) : '-' }}
+                            </td>
+                            <td class="py-2.5 text-right text-slate-600">
+                                {{ !is_null($sp->detail_indikator['Penyelesaian Tagihan']) ? number_format($sp->detail_indikator['Penyelesaian Tagihan'], 2) : '-' }}
+                            </td>
+                            <td class="py-2.5 text-right text-slate-600">
+                                {{ !is_null($sp->detail_indikator['Belanja Kontraktual']) ? number_format($sp->detail_indikator['Belanja Kontraktual'], 2) : '-' }}
+                            </td>
+                            <td class="py-2.5 text-right text-slate-600">
+                                {{ !is_null($sp->detail_indikator['Pengelolaan UP/TUP']) ? number_format($sp->detail_indikator['Pengelolaan UP/TUP'], 2) : '-' }}
+                            </td>
+                            <td class="py-2.5 pl-4 text-slate-500 text-xs">
+                                {{ optional($sp->update_terakhir)->translatedFormat('d M Y H:i') ?? '-' }}
+                            </td>
+                            <td class="py-2.5">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <a href="{{ route('indicators.index', ['satker_id' => $sp->id]) }}"
+                                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-navy-900/5 text-navy-900 hover:bg-navy-900/10"
+                                       title="Lihat & nilai laporan satker ini">
+                                        <i class="ti ti-eye text-base"></i>
+                                    </a>
+                                    <a href="{{ route('monitoring.cetak', array_merge(['satker' => $sp->id], request()->only(['granularitas', 'periode', 'tahun', 'triwulan', 'semester']))) }}"
+                                       target="_blank"
+                                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-navy-900/5 text-navy-900 hover:bg-navy-900/10"
+                                       title="Cetak laporan satker ini">
+                                        <i class="ti ti-printer text-base"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="11" class="py-6 text-center text-slate-400 text-xs">
+                                Belum ada satker yang mencapai nilai 95&ndash;100 (Hijau) pada periode ini.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     {{-- ================= 3. NILAI PER INDIKATOR + NOTIFIKASI + TINDAK LANJUT ================= --}}

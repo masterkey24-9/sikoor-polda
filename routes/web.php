@@ -237,6 +237,24 @@ Route::get('/dashboard', function () {
     
         $totalSatker = $satkerPerformance->count();
         $rataRataKinerja = $satkerPerformance->whereNotNull('nilai')->avg('nilai');
+
+        // Satker terbaik periode ini: nilai tertinggi, TAPI hanya dihitung kalau
+        // masuk kategori Hijau (skema lama ambang_hijau, default 95) alias rentang 95-100.
+        // Kalau tidak ada satker yang tembus 95, widget ini akan kosong (bukan nampilin
+        // yang di bawah 95 sebagai "terbaik").
+        $ambangHijau = config('sikoor.ambang_hijau', 95);
+        $satkerTerbaikHijau = $satkerPerformance
+            ->filter(fn ($sp) => ! is_null($sp->nilai) && $sp->nilai >= $ambangHijau && $sp->nilai <= 100)
+            ->sortByDesc('nilai')
+            ->first();
+
+        // Peringkat satker Hijau (95-100) urut dari nilai tertinggi, buat tabel
+        // "Peringkat Satker Terbaik" di dashboard. Satker di bawah 95 tidak ikut tampil
+        // di sini sama sekali (bukan cuma diurutkan ke bawah).
+        $satkerRankingHijau = $satkerPerformance
+            ->filter(fn ($sp) => ! is_null($sp->nilai) && $sp->nilai >= $ambangHijau && $sp->nilai <= 100)
+            ->sortByDesc('nilai')
+            ->values();
     
         
         $urutanPrioritas = ['Tinggi' => 0, 'Sedang' => 1, 'Rendah' => 2];
@@ -387,7 +405,7 @@ Route::get('/dashboard', function () {
             'totalSatker', 'rataRataKinerja', 'selisihBulanLalu', 'trendBulanan',
             'totalSangatBaik', 'totalBaik', 'totalCukup', 'totalKurang', 'totalPerluPerhatian',
             'persenSangatBaik', 'persenBaik', 'persenCukup', 'persenKurang', 'persenPerluPerhatian',
-            'satkerPrioritas', 'nilaiPerIndikator', 'earlyWarnings',
+            'satkerPrioritas', 'nilaiPerIndikator', 'earlyWarnings', 'satkerTerbaikHijau', 'satkerRankingHijau',
             'tindakLanjutSelesai', 'tindakLanjutProses', 'tindakLanjutBelum', 'totalTindakLanjut'
         ));
     }
