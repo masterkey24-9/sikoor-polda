@@ -152,13 +152,8 @@
                     </label>
 
                     <button type="submit"
-<<<<<<< HEAD
-                            class="w-full h-11 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium transition">
-                        Masuk sebagai <span id="roleTabLabelTombol">Admin</span>
-=======
                             class="w-full h-11 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-bold tracking-wide transition">
                         Masuk
->>>>>>> a1006c07f8ad677c344ec6c364a782fe2871152b
                     </button>
                 </form>
             </div>

@@ -380,7 +380,7 @@ Route::get('/dashboard', function () {
             ->latest()
             ->take(6)
             ->get();
-    
+
         // Progress tindak lanjut: status laporan tiap tugas (indicator) sesuai filter satker/periode saat ini
         $tindakLanjutSelesai = 0;
         $tindakLanjutProses = 0;
@@ -397,7 +397,7 @@ Route::get('/dashboard', function () {
             }
         }
         $totalTindakLanjut = $indicators->count();
-    
+
         return view('admin.dashboard', compact(
             'indicators', 'satkers', 'satkerPerformance',
             'granularitas', 'periodeAktif', 'tahunAktif', 'triwulanAktif', 'semesterAktif', 'labelPeriodeAktif', 'trendRange',
@@ -412,49 +412,23 @@ Route::get('/dashboard', function () {
     return redirect()->route('monitoring.saya');
 })->middleware(['auth', 'password.change'])->name('dashboard');
 
-<<<<<<< HEAD
-
-    Route::middleware(['auth', 'password.change'])->group(function () {
-
-    // Halaman wajib ganti password di percobaan login pertama (khusus satker) —
-    // dikecualikan dari redirect paksa lewat nama rute di EnsurePasswordIsChanged.
-    Route::get('/ganti-password-pertama', function () {
-        return view('auth.force-password-change');
-    })->name('password.paksa.ganti');
-=======
-    Route::middleware('auth')->group(function () {
->>>>>>> a1006c07f8ad677c344ec6c364a782fe2871152b
+Route::middleware(['auth', 'password.change'])->group(function () {
 
     Route::post('/indicator/{indicator_id}/upload', [IndicatorResultController::class, 'store'])->name('indicator.upload');
 
     Route::middleware('admin')->group(function () {
         Route::get('/indicators', [IndicatorController::class, 'index'])->name('indicators.index');
         Route::post('/indicators', [IndicatorController::class, 'store'])->name('indicators.store');
-<<<<<<< HEAD
-
-        Route::get('/ikpa-indikator', [\App\Http\Controllers\IkpaIndikatorController::class, 'index'])->name('ikpa-indikator.index');
-        Route::post('/ikpa-indikator', [\App\Http\Controllers\IkpaIndikatorController::class, 'store'])->name('ikpa-indikator.store');
-        Route::put('/ikpa-indikator/{ikpaIndikator}', [\App\Http\Controllers\IkpaIndikatorController::class, 'update'])->name('ikpa-indikator.update');
-        Route::delete('/ikpa-indikator/{ikpaIndikator}', [\App\Http\Controllers\IkpaIndikatorController::class, 'destroy'])->name('ikpa-indikator.destroy');
-=======
-        Route::get('/indicators/riwayat', [IndicatorController::class, 'riwayat'])->name('indicators.riwayat');
-        Route::get('/indicators/riwayat/{batchId}', [IndicatorController::class, 'riwayatDetail'])->name('indicators.riwayat.detail');
->>>>>>> a1006c07f8ad677c344ec6c364a782fe2871152b
+        route::put('/indicators/{id}', [IndicatorController::class, 'update'])->name('indicators.update');
         Route::get('/indicators/{id}', [IndicatorController::class, 'show'])->name('indicators.show');
         Route::post('/indicator-results/{id}/nilai', [IndicatorResultController::class, 'updateStatus'])->name('indicator-results.updateStatus');
-
         Route::get('/satkers', [SatkerController::class, 'index'])->name('satkers.index');
         Route::post('/satkers', [SatkerController::class, 'store'])->name('satkers.store');
         Route::delete('/satkers/{id}', [SatkerController::class, 'destroy'])->name('satkers.destroy');
         Route::get('/satkers/cetak-kredensial', [SatkerController::class, 'cetakKredensialForm'])->name('satkers.cetakKredensialForm');
         Route::post('/satkers/cetak-kredensial', [SatkerController::class, 'cetakKredensial'])->name('satkers.cetakKredensial');
-
-        
-        // ================= MONITORING IKPA (halaman tabel saja) =================
-        // Sengaja diringankan: cuma hitung yang dibutuhkan tabel "Monitoring IKPA Terbaru"
-        // (filter periode/satker + skor & detail per indikator per satker). Trend, kategori
-        // donut, prioritas pembinaan, notifikasi, dan progress tindak lanjut sekarang ada
-        // di /dashboard, jadi tidak perlu dihitung ulang di sini.
+        route::get('/satkers/{id}', [SatkerController::class, 'show'])->name('satkers.show');
+        route::put('/satkers/{id}', [SatkerController::class, 'update'])->name('satkers.update');
         Route::get('/monitoring-ikpa', function () {
             $granularitas = in_array(request('granularitas'), ['bulanan', 'triwulan', 'semester', 'tahunan'])
                 ? request('granularitas')
@@ -592,151 +566,7 @@ Route::get('/dashboard', function () {
                     ];
                 })
                 ->values();
-<<<<<<< HEAD
-        
-            $totalSatker = $satkerPerformance->count();
-            $rataRataKinerja = $satkerPerformance->whereNotNull('nilai')->avg('nilai');
-        
-            
-            $urutanPrioritas = ['Tinggi' => 0, 'Sedang' => 1, 'Rendah' => 2];
-            $satkerPrioritas = $satkerPerformance
-                ->sort(function ($a, $b) use ($urutanPrioritas) {
-                    $rankA = $urutanPrioritas[$a->prioritas_label] ?? 3;
-                    $rankB = $urutanPrioritas[$b->prioritas_label] ?? 3;
-                    if ($rankA !== $rankB) {
-                        return $rankA <=> $rankB;
-                    }
-                    return ($a->nilai ?? -1) <=> ($b->nilai ?? -1);
-                })
-                ->values()
-                ->take(8);
-        
-            
-            $labelPeriode = function (\Carbon\Carbon $awal) use ($granularitas) {
-                return match ($granularitas) {
-                    'triwulan' => 'TW' . ceil($awal->month / 3) . ' ' . $awal->year,
-                    'semester' => 'S' . ($awal->month <= 6 ? 1 : 2) . ' ' . $awal->year,
-                    'tahunan'  => (string) $awal->year,
-                    default    => $awal->translatedFormat('M Y'),
-                };
-            };
-        
-            
-            $trendBulanan = collect();
-            for ($i = $jumlahTitikTren - 1; $i >= 0; $i--) {
-                $awalPeriode  = $rangeAwal->copy()->subMonths($panjangBulanPeriode * $i);
-                $akhirPeriode = $awalPeriode->copy()->addMonths($panjangBulanPeriode)->subDay()->endOfDay();
-        
-                $rataPeriodeIni = \App\Models\IndicatorResult::whereNotNull('indicator_results.nilai')
-                    ->join('indicators', 'indicator_results.indicator_id', '=', 'indicators.id')
-                    ->whereBetween('indicators.periode', [$awalPeriode, $akhirPeriode])
-                    ->when(request()->filled('satker_id'), fn ($q) => $q->where('indicators.satker_id', request('satker_id')))
-                    ->avg('indicator_results.nilai');
-        
-                $trendBulanan->push([
-                    'bulan' => $labelPeriode($awalPeriode),
-                    'nilai' => $rataPeriodeIni ? round($rataPeriodeIni, 2) : 0,
-                ]);
-            }
-        
-            
-            $ikpaPeriodeIni = $trendBulanan->last()['nilai'] ?? 0;
-            $ikpaPeriodeSebelumnya = $trendBulanan->count() > 1 ? $trendBulanan[$trendBulanan->count() - 2]['nilai'] : null;
-            $selisihBulanLalu = ! is_null($ikpaPeriodeSebelumnya) ? round($ikpaPeriodeIni - $ikpaPeriodeSebelumnya, 2) : null;
-        
-            
-            $totalSangatBaik = $satkerPerformance->where('kategori_label', 'Sangat Baik')->count();
-            $totalBaik = $satkerPerformance->where('kategori_label', 'Baik')->count();
-            $totalCukup = $satkerPerformance->where('kategori_label', 'Cukup')->count();
-            $totalKurang = $satkerPerformance->where('kategori_label', 'Kurang')->count();
-            
-            $totalPerluPerhatian = $totalCukup + $totalKurang;
-        
-            $persenSangatBaik = $totalSatker > 0 ? round($totalSangatBaik / $totalSatker * 100, 2) : 0;
-            $persenBaik = $totalSatker > 0 ? round($totalBaik / $totalSatker * 100, 2) : 0;
-            $persenCukup = $totalSatker > 0 ? round($totalCukup / $totalSatker * 100, 2) : 0;
-            $persenKurang = $totalSatker > 0 ? round($totalKurang / $totalSatker * 100, 2) : 0;
-            $persenPerluPerhatian = $totalSatker > 0 ? round($totalPerluPerhatian / $totalSatker * 100, 2) : 0;
-        
-            
-            $urutanIndikatorBaku = \App\Models\IkpaBobotIndikator::namaTerurut();
-        
-            
-            $trafficLightIndikator = function (?float $nilai) use ($kategoriIkpa) {
-                $label = $kategoriIkpa($nilai)['label'];
-        
-                return match ($label) {
-                    'Sangat Baik', 'Baik' => ['warna' => 'Baik', 'bar' => 'bg-emerald-500', 'teks' => 'text-emerald-600', 'badge' => 'bg-emerald-50 text-emerald-600'],
-                    'Cukup' => ['warna' => 'Cukup', 'bar' => 'bg-amber-500', 'teks' => 'text-amber-600', 'badge' => 'bg-amber-50 text-amber-600'],
-                    'Kurang' => ['warna' => 'Kurang', 'bar' => 'bg-red-500', 'teks' => 'text-red-600', 'badge' => 'bg-red-50 text-red-600'],
-                    default => ['warna' => 'Belum Dinilai', 'bar' => 'bg-slate-200', 'teks' => 'text-slate-400', 'badge' => 'bg-slate-100 text-slate-500'],
-                };
-            };
-        
-            
-            $judulIndikatorAktif = collect(\App\Models\IkpaBobotIndikator::namaTerurut());
-        
-            $rataPerJudul = \App\Models\IndicatorResult::whereNotNull('indicator_results.nilai')
-                ->join('indicators', 'indicator_results.indicator_id', '=', 'indicators.id')
-                ->when(request()->filled('satker_id'), fn ($q) => $q->where('indicators.satker_id', request('satker_id')))
-                ->whereBetween('indicators.periode', [$rangeAwal, $rangeAkhir])
-                ->select('indicators.judul', DB::raw('AVG(indicator_results.nilai) as rata'))
-                ->groupBy('indicators.judul')
-                ->pluck('rata', 'judul');
-        
-            $nilaiPerIndikator = $judulIndikatorAktif
-                ->map(function ($judul) use ($rataPerJudul, $trafficLightIndikator) {
-                    $rata = isset($rataPerJudul[$judul]) ? round((float) $rataPerJudul[$judul], 2) : null;
-                    $tl = $trafficLightIndikator($rata);
-        
-                    return [
-                        'judul' => $judul,
-                        'rata' => $rata,
-                        'warna' => $tl['warna'],
-                        'kelas_bar' => $tl['bar'],
-                        'kelas_teks' => $tl['teks'],
-                        'kelas_badge' => $tl['badge'],
-                    ];
-                })
-                ->sortBy(function ($item) use ($urutanIndikatorBaku) {
-                    $posisi = array_search($item['judul'], $urutanIndikatorBaku, true);
-                    return $posisi !== false ? sprintf('0-%02d', $posisi) : '1-' . $item['judul'];
-                })
-                ->values();
-        
-            
-            if (! request()->filled('satker_id')) {
-                \App\Http\Controllers\NotificationController::generateNotifikasiIkpa(
-                    $satkerPerformance, $nilaiPerIndikator, $indicators, $rangeAkhir, $labelPeriodeAktif
-                );
-            }
-        
-            // Notifikasi terbaru untuk admin yang sedang login
-            $notifikasiTerbaru = \App\Models\Notification::where('user_id', auth()->id())
-                ->latest()
-                ->take(4)
-                ->get();
-        
-            // Progress tindak lanjut: status laporan tiap tugas (indicator) sesuai filter satker/periode saat ini
-            $tindakLanjutSelesai = 0;
-            $tindakLanjutProses = 0;
-            $tindakLanjutBelum = 0;
-            foreach ($indicators as $ind) {
-                $latestResult = $ind->results->sortByDesc('created_at')->first();
-                if (! $latestResult) {
-                    $tindakLanjutBelum++;
-                } elseif ($latestResult->status === 'diterima') {
-                    $tindakLanjutSelesai++;
-                } else {
-                    // 'dikirim' (menunggu dinilai admin) atau 'direvisi' (menunggu satker perbaiki)
-                    $tindakLanjutProses++;
-                }
-            }
-            $totalTindakLanjut = $indicators->count();
-        
-=======
 
->>>>>>> a1006c07f8ad677c344ec6c364a782fe2871152b
             return view('admin.monitoring', compact(
                 'indicators', 'satkers', 'satkerPerformance',
                 'granularitas', 'periodeAktif', 'tahunAktif', 'triwulanAktif', 'semesterAktif', 'labelPeriodeAktif'
