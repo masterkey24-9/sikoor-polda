@@ -11,12 +11,18 @@
 <div class="h-16 flex items-center gap-3 px-5 border-b border-navy-800 relative overflow-hidden">
     <div class="absolute inset-0 opacity-[0.06]"
          style="background-image: repeating-linear-gradient(45deg, #D4AF37 0 2px, transparent 2px 14px), repeating-linear-gradient(-45deg, #D4AF37 0 2px, transparent 2px 14px);"></div>
-    @if (file_exists(public_path('images/logo.png')))
-        <img src="{{ asset('images/logo.png') }}" alt="Logo Polda Sumbar"
-             class="w-8 h-8 rounded object-contain relative shrink-0">
-    @else
-        <div class="w-8 h-8 rounded bg-gold-500 flex items-center justify-center text-navy-950 font-display font-bold text-sm relative">S</div>
-    @endif
+    <div class="flex items-center gap-1.5 relative shrink-0">
+        @if (file_exists(public_path('images/logo.png')))
+            <img src="{{ asset('images/logo.png') }}" alt="Logo Polda Sumbar"
+                 class="w-8 h-8 rounded object-contain shrink-0">
+        @else
+            <div class="w-8 h-8 rounded bg-gold-500 flex items-center justify-center text-navy-950 font-display font-bold text-sm">S</div>
+        @endif
+        @if (file_exists(public_path('images/bidkeu.png')))
+            <img src="{{ asset('images/bidkeu.png') }}" alt="Logo Bidkeu"
+                 class="w-8 h-8 rounded object-contain shrink-0">
+        @endif
+    </div>
     <div class="leading-tight relative">
         <p class="font-display font-semibold text-sm text-white">Simpati IKPA</p>
         <p class="text-[11px] text-slate-400">Polda Sumbar</p>
