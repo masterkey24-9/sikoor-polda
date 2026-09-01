@@ -20,6 +20,7 @@
         }
         .btn-print { background: #0f172a; color: #fff; }
         .btn-excel { background: #10b981; color: #fff; }
+        .btn-back { background: #fff; color: #334155; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; text-decoration: none; }
         @media print {
             .toolbar { display: none; }
             body { padding: 0; }
@@ -28,6 +29,7 @@
 </head>
 <body>
     <div class="toolbar">
+        <a href="{{ route('satkers.index') }}" class="btn btn-back">&larr; Kembali ke Kelola Satker</a>
         <button class="btn btn-print" onclick="window.print()">Cetak / Simpan PDF</button>
         <button class="btn btn-excel" onclick="unduhCsv()">Download Excel (CSV)</button>
     </div>

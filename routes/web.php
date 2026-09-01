@@ -64,6 +64,7 @@ Route::get('/dashboard', function () {
                 $kategori = $kategoriIkpa($skor);
 
                 return (object) [
+                    'id' => $satker->id,
                     'nama_satker' => $satker->nama_satker,
                     'nilai' => $skor,
                     'kategori_label' => $kategori['label'],
@@ -144,6 +145,7 @@ Route::get('/dashboard', function () {
         Route::delete('/satkers/{id}', [SatkerController::class, 'destroy'])->name('satkers.destroy');
         Route::get('/satkers/cetak-kredensial', [SatkerController::class, 'cetakKredensialForm'])->name('satkers.cetakKredensialForm');
         Route::post('/satkers/cetak-kredensial', [SatkerController::class, 'cetakKredensial'])->name('satkers.cetakKredensial');
+        Route::get('/satkers/cetak-kredensial/hasil', [SatkerController::class, 'cetakKredensialHasil'])->name('satkers.cetakKredensialHasil');
 
         
         Route::get('/monitoring-ikpa', function () {

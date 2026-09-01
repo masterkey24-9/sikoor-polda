@@ -101,7 +101,9 @@
             <div class="space-y-2.5 flex-1">
                 @forelse ($satkerPrioritasMini ?? [] as $sp)
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-slate-600 truncate pr-2">{{ $sp->nama_satker }}</span>
+                        <a href="{{ route('indicators.index', ['satker_id' => $sp->id]) }}" class="text-slate-600 hover:text-navy-900 hover:underline truncate pr-2">
+                            {{ $sp->nama_satker }}
+                        </a>
                         <span class="shrink-0 flex items-center gap-2">
                             <span class="text-slate-700 font-medium">{{ !is_null($sp->nilai) ? number_format($sp->nilai, 2) : '-' }}</span>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-medium {{ $sp->kategori_badge }}">{{ $sp->kategori_label }}</span>

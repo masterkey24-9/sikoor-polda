@@ -20,6 +20,56 @@
         </div>
     @endif
 
+    {{-- Muncul kalau datang dari tombol "Lihat" di tabel Monitoring IKPA (bawa ?satker_id=X).
+         Ini pintu masuk langsung ke halaman penilaian laporan per satker. --}}
+    @if ($satkerFilterAktif ?? null)
+        <div class="bg-white rounded-xl border border-slate-200 mb-6">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div>
+                    <p class="text-sm font-medium text-slate-700">Laporan {{ $satkerFilterAktif->nama_satker }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Klik salah satu tugas di bawah untuk menilai laporan yang masuk.</p>
+                </div>
+                <a href="{{ route('indicators.index') }}" class="text-xs font-medium text-navy-800 hover:underline shrink-0">
+                    &times; Hapus filter
+                </a>
+            </div>
+
+            <div class="divide-y divide-slate-100">
+                @forelse ($indicatorsSatkerFilter ?? [] as $ind)
+                    @php $latestResult = $ind->results->sortByDesc('created_at')->first(); @endphp
+                    <a href="{{ route('indicators.show', $ind->id) }}"
+                       class="flex items-center gap-4 px-6 py-4 hover:bg-slate-50">
+                        <i class="ti ti-clipboard-list text-slate-400 text-lg shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-slate-800">{{ $ind->judul }}</p>
+                            <p class="text-xs text-slate-400 mt-0.5">
+                                {{ $ind->periode ? \Carbon\Carbon::parse($ind->periode)->translatedFormat('F Y') : '-' }}
+                                @if ($latestResult)
+                                    &middot; Dikirim {{ $latestResult->created_at->translatedFormat('d M Y') }}
+                                    @if (!is_null($latestResult->nilai))
+                                        &middot; Nilai: <span class="font-medium text-navy-900">{{ $latestResult->nilai }}</span>
+                                    @endif
+                                @endif
+                            </p>
+                        </div>
+                        @if (!$latestResult)
+                            <span class="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">Belum lapor</span>
+                        @elseif (is_null($latestResult->nilai))
+                            <span class="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">Menunggu dinilai</span>
+                        @elseif ($latestResult->status === 'diterima')
+                            <span class="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">Diterima</span>
+                        @else
+                            <span class="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">Perlu direvisi</span>
+                        @endif
+                        <i class="ti ti-chevron-right text-slate-300 shrink-0"></i>
+                    </a>
+                @empty
+                    <p class="px-6 py-8 text-center text-sm text-slate-400">Belum ada tugas untuk satker ini.</p>
+                @endforelse
+            </div>
+        </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
     <div class="bg-white rounded-xl border border-slate-200 p-6">

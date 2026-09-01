@@ -10,7 +10,12 @@ use Illuminate\Validation\Rule;
 class IndicatorController extends Controller
 {
     /**
-     * Daftar semua indicator (khusus admin), dipakai di resources/views/indicators/index.blade.php
+     * Daftar semua indicator (khusus admin), dipakai di resources/views/indicators/index.blade.php.
+     *
+     * Kalau ada ?satker_id=X di URL (dipakai tombol "Lihat" dari Monitoring IKPA), halaman ini
+     * juga nampilin daftar tugas/laporan satker itu yang bisa langsung diklik ke halaman
+     * penilaian (indicators.show) — "Ringkasan Indikator Bulan Ini" di bawahnya tetap hitung
+     * dari SEMUA satker, nggak ikut kefilter.
      */
     public function index()
     {
@@ -19,7 +24,18 @@ class IndicatorController extends Controller
         $jenisIndikator = config('sikoor.jenis_indikator', []);
         $ringkasanIndikator = $this->ringkasanIndikatorBulanIni($indicators, $jenisIndikator);
 
-        return view('indicators.index', compact('indicators', 'satkers', 'jenisIndikator', 'ringkasanIndikator'));
+        $satkerFilterAktif = null;
+        $indicatorsSatkerFilter = collect();
+
+        if (request()->filled('satker_id')) {
+            $satkerFilterAktif = Satker::find(request('satker_id'));
+            $indicatorsSatkerFilter = $indicators->where('satker_id', (int) request('satker_id'))->values();
+        }
+
+        return view('indicators.index', compact(
+            'indicators', 'satkers', 'jenisIndikator', 'ringkasanIndikator',
+            'satkerFilterAktif', 'indicatorsSatkerFilter'
+        ));
     }
 
     /**

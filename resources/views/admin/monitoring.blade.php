@@ -260,7 +260,11 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($satkerPrioritas ?? [] as $sp)
                         <tr>
-                            <td class="py-2 text-slate-700">{{ $sp->nama_satker }}</td>
+                            <td class="py-2">
+                                <a href="{{ route('indicators.index', ['satker_id' => $sp->id]) }}" class="text-slate-700 hover:text-navy-900 hover:underline">
+                                    {{ $sp->nama_satker }}
+                                </a>
+                            </td>
                             <td class="py-2 text-right font-medium text-slate-700">
                                 {{ !is_null($sp->nilai) ? number_format($sp->nilai, 2) : '-' }}
                             </td>
@@ -418,9 +422,9 @@
                             </td>
                             <td class="py-2.5">
                                 <div class="flex items-center justify-center gap-1.5">
-                                    <a href="{{ route('indicators.index') }}"
+                                    <a href="{{ route('indicators.index', ['satker_id' => $sp->id]) }}"
                                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-navy-900/5 text-navy-900 hover:bg-navy-900/10"
-                                       title="Lihat indikator satker ini">
+                                       title="Lihat & nilai laporan satker ini">
                                         <i class="ti ti-eye text-base"></i>
                                     </a>
                                     <a href="{{ route('monitoring.cetak', array_merge(['satker' => $sp->id], request()->only(['granularitas', 'periode', 'tahun', 'triwulan', 'semester']))) }}"
