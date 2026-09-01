@@ -186,14 +186,14 @@ class NotificationController extends Controller
         // 2) Deviasi pelaksanaan anggaran: indikator terkait anggaran masuk kategori Merah
         $judulAnggaran = ['Deviasi Halaman III DIPA', 'Penyerapan Anggaran', 'Belanja Kontraktual'];
         foreach ($nilaiPerIndikator as $item) {
-            if (! in_array($item['judul'], $judulAnggaran, true) || $item['warna'] !== 'Merah') {
+            if (! in_array($item['judul'], $judulAnggaran, true) || $item['warna'] !== 'Kurang') {
                 continue;
             }
 
             $buat(
                 'deviasi_anggaran',
                 "Deviasi pelaksanaan anggaran - {$item['judul']} ({$labelPeriodeAktif})",
-                "Rata-rata nilai {$item['judul']} pada {$labelPeriodeAktif} masuk kategori Merah (" . ($item['rata'] ?? '-') . ').',
+                "Rata-rata nilai {$item['judul']} pada {$labelPeriodeAktif} masuk kategori Kurang (" . ($item['rata'] ?? '-') . ').',
                 route('indicators.index')
             );
         }

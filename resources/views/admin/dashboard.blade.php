@@ -326,19 +326,47 @@
         </div>
 
         <div class="bg-white rounded-xl p-5 border border-slate-200">
-            <p class="text-sm font-medium text-slate-700 mb-3">Notifikasi Terbaru</p>
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <p class="text-sm font-semibold text-slate-800">Early Warning</p>
+                    <p class="text-[11px] text-slate-400">Peringatan dini indikator kinerja</p>
+                </div>
+                @if (($earlyWarnings ?? collect())->isNotEmpty())
+                    <span class="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 text-red-600">
+                        {{ $earlyWarnings->count() }} aktif
+                    </span>
+                @endif
+            </div>
+
             <div class="space-y-1">
-                @forelse ($notifikasiTerbaru ?? [] as $notif)
-                    <a href="{{ $notif->link ?? '#' }}" class="flex items-start gap-3 py-2.5 border-b border-slate-50 last:border-0 hover:bg-slate-50 -mx-1 px-1 rounded-lg">
-                        <span class="w-2 h-2 rounded-full mt-1.5 shrink-0 {{ $notif->read_at ? 'bg-slate-300' : 'bg-gold-500' }}"></span>
+                @forelse ($earlyWarnings ?? [] as $warn)
+                    @php
+                        $severity = match ($warn->type) {
+                            'penurunan_ikpa', 'deviasi_anggaran' => 'danger',
+                            'keterlambatan_tagihan', 'batas_tindak_lanjut' => 'warning',
+                            default => 'info',
+                        };
+                        $severityStyle = [
+                            'danger'  => ['icon' => 'ti-alert-circle', 'bg' => 'bg-red-50', 'text' => 'text-red-600'],
+                            'warning' => ['icon' => 'ti-alert-triangle', 'bg' => 'bg-amber-50', 'text' => 'text-amber-600'],
+                            'info'    => ['icon' => 'ti-info-circle', 'bg' => 'bg-blue-50', 'text' => 'text-blue-600'],
+                        ][$severity];
+                    @endphp
+                    <a href="{{ $warn->link ?? '#' }}" class="flex items-start gap-3 py-2.5 border-b border-slate-50 last:border-0 hover:bg-slate-50 -mx-1 px-1 rounded-lg">
+                        <span class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 {{ $severityStyle['bg'] }}">
+                            <i class="ti {{ $severityStyle['icon'] }} text-sm {{ $severityStyle['text'] }}"></i>
+                        </span>
                         <div class="min-w-0 flex-1">
-                            <p class="text-sm font-medium text-slate-800 truncate">{{ $notif->title }}</p>
-                            <p class="text-xs text-slate-500 line-clamp-2">{{ $notif->body }}</p>
-                            <p class="text-[11px] text-slate-400 mt-0.5">{{ $notif->created_at->diffForHumans() }}</p>
+                            <p class="text-sm font-semibold text-slate-800 truncate">{{ $warn->title }}</p>
+                            <p class="text-xs text-slate-500 line-clamp-2">{{ $warn->body }}</p>
+                            <p class="text-[11px] text-slate-400 mt-0.5">{{ $warn->created_at->diffForHumans() }}</p>
                         </div>
                     </a>
                 @empty
-                    <p class="text-xs text-slate-400 text-center py-6">Belum ada notifikasi.</p>
+                    <div class="text-center py-8">
+                        <i class="ti ti-shield-check text-2xl text-emerald-500"></i>
+                        <p class="text-xs text-slate-400 mt-2">Belum ada peringatan dini untuk periode ini.</p>
+                    </div>
                 @endforelse
             </div>
         </div>

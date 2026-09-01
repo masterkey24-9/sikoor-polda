@@ -43,6 +43,8 @@
     $loginLogo = asset('images/logo.png');
     $loginLogoExists = file_exists(public_path('images/logo.png'));
     $loginBgExists = file_exists(public_path('images/login-background.jpeg'));
+    $bidkeuLogo = asset('images/bidkeu.png');
+    $bidkeuLogoExists = file_exists(public_path('images/bidkeu.png'));
 @endphp
 
 <div class="min-h-screen flex bg-navy-950 relative overflow-hidden">
@@ -78,15 +80,23 @@
         <div class="w-full max-w-sm relative">
 
             <div class="flex flex-col items-center mb-8">
-                @if ($loginLogoExists)
-                    <img src="{{ $loginLogo }}" alt="Logo Simpati IKPA Polda Sumbar"
-                         class="w-12 h-12 rounded-xl object-contain mb-3 shadow-lg anim-fade-up delay-1">
-                @else
-                    <div class="w-12 h-12 rounded-xl bg-gold-500 flex items-center justify-center text-navy-950 font-display font-bold text-xl mb-3 anim-fade-up delay-1">S</div>
-                @endif
-                <h1 class="font-display font-semibold text-xl text-white anim-fade-up delay-2">SIMPATI IKPA</h1>
-                <p class="text-slate-400 text-sm mt-1 text-center leading-relaxed anim-fade-up delay-3">
-                    Sistem Informasi Monitoring Pemantauan dan Tindak Lanjut Indikator Kinerja Pelaksanaan Anggaran
+                <div class="flex items-center gap-2 mb-3 anim-fade-up delay-1">
+                    @if ($loginLogoExists)
+                        <img src="{{ $loginLogo }}" alt="Logo Polda Sumbar"
+                             class="w-16 h-16 rounded-xl object-contain shadow-lg">
+                    @else
+                        <div class="w-16 h-16 rounded-xl bg-gold-500 flex items-center justify-center text-navy-950 font-display font-bold text-xl">S</div>
+                    @endif
+                    @if ($bidkeuLogoExists)
+                        <img src="{{ $bidkeuLogo }}" alt="Logo Bidkeu"
+                             class="w-16 h-16 rounded-xl object-contain shadow-lg">
+                    @endif
+                </div>
+                <h1 class="font-display font-extrabold text-2xl sm:text-3xl text-white tracking-tight anim-fade-up delay-2">
+                    SIMPATI <span class="text-gold-400">IKPA</span>
+                </h1>
+                <p class="text-slate-300 text-sm font-medium mt-2 text-center leading-relaxed anim-fade-up delay-3">
+                    SISTEM INFORMASI MONITORING PEMANTAUAN DAN TINDAK LANJUT INDIKATOR KINERJA PELAKSANAAN ANGGARAN
                 </p>
             </div>
 
@@ -101,33 +111,33 @@
                     @csrf
 
                     <div>
-                        <label for="email" class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                        <label for="email" class="block text-sm font-bold text-navy-950 mb-1.5">Email</label>
                         <input type="email" id="email" name="email" required autofocus
                                value="{{ old('email') }}"
                                placeholder="nama@poldasumbar.go.id"
-                               class="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800 focus:border-navy-800">
+                               class="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-navy-800 focus:border-navy-800">
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium text-slate-700 mb-1.5">Kata sandi</label>
+                        <label for="password" class="block text-sm font-bold text-navy-950 mb-1.5">Kata sandi</label>
                         <input type="password" id="password" name="password" required
                                placeholder="Masukkan kata sandi"
-                               class="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800 focus:border-navy-800">
+                               class="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-navy-800 focus:border-navy-800">
                     </div>
 
-                    <label class="flex items-center gap-2 text-sm text-slate-500">
+                    <label class="flex items-center gap-2 text-sm font-medium text-slate-600">
                         <input type="checkbox" name="remember" class="rounded border-slate-300">
                         Ingat saya
                     </label>
 
                     <button type="submit"
-                            class="w-full h-11 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium transition">
+                            class="w-full h-11 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-bold tracking-wide transition">
                         Masuk
                     </button>
                 </form>
             </div>
 
-            <p class="text-center text-slate-500 text-xs mt-6 text-white anim-fade-up delay-5">
+            <p class="text-center text-slate-200 text-xs font-semibold tracking-wide mt-6 anim-fade-up delay-5">
                 Akses khusus personel Polda Sumbar dan satuan kerja terdaftar.
             </p>
         </div>

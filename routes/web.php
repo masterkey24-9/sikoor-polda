@@ -355,10 +355,13 @@ Route::get('/dashboard', function () {
             );
         }
     
-        // Notifikasi terbaru untuk admin yang sedang login
-        $notifikasiTerbaru = \App\Models\Notification::where('user_id', auth()->id())
+        // Early Warning untuk admin yang sedang login — hanya notifikasi otomatis
+        // hasil deteksi kondisi IKPA (bukan chat/dokumen biasa).
+        $tipeEarlyWarning = ['penurunan_ikpa', 'deviasi_anggaran', 'keterlambatan_tagihan', 'batas_tindak_lanjut'];
+        $earlyWarnings = \App\Models\Notification::where('user_id', auth()->id())
+            ->whereIn('type', $tipeEarlyWarning)
             ->latest()
-            ->take(4)
+            ->take(6)
             ->get();
     
         // Progress tindak lanjut: status laporan tiap tugas (indicator) sesuai filter satker/periode saat ini
@@ -384,7 +387,7 @@ Route::get('/dashboard', function () {
             'totalSatker', 'rataRataKinerja', 'selisihBulanLalu', 'trendBulanan',
             'totalSangatBaik', 'totalBaik', 'totalCukup', 'totalKurang', 'totalPerluPerhatian',
             'persenSangatBaik', 'persenBaik', 'persenCukup', 'persenKurang', 'persenPerluPerhatian',
-            'satkerPrioritas', 'nilaiPerIndikator', 'notifikasiTerbaru',
+            'satkerPrioritas', 'nilaiPerIndikator', 'earlyWarnings',
             'tindakLanjutSelesai', 'tindakLanjutProses', 'tindakLanjutBelum', 'totalTindakLanjut'
         ));
     }
