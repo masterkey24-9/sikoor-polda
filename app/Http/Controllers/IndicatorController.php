@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Indicator;
+use App\Models\IndikatorBobot;
 use App\Models\Satker;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -22,7 +23,9 @@ class IndicatorController extends Controller
         $indicators = Indicator::with(['satker', 'results'])->latest()->get();
         $satkers = Satker::orderBy('nama_satker')->get();
         $jenisIndikator = config('sikoor.jenis_indikator', []);
-        $ringkasanIndikator = $this->ringkasanIndikatorBulanIni($indicators, $jenisIndikator);
+        $bobotIndikator = IndikatorBobot::pluck('bobot', 'judul');
+        $ringkasanIndikator = $this->ringkasanIndikatorBulanIni($indicators, $jenisIndikator, $bobotIndikator);
+        $totalBobot = $bobotIndikator->sum();
 
         $satkerFilterAktif = null;
         $indicatorsSatkerFilter = collect();
@@ -34,8 +37,33 @@ class IndicatorController extends Controller
 
         return view('indicators.index', compact(
             'indicators', 'satkers', 'jenisIndikator', 'ringkasanIndikator',
-            'satkerFilterAktif', 'indicatorsSatkerFilter'
+            'satkerFilterAktif', 'indicatorsSatkerFilter', 'bobotIndikator', 'totalBobot'
         ));
+    }
+
+    /**
+     * Simpan perubahan bobot semua indikator sekaligus (form "Pengaturan Bobot Indikator").
+     * Tidak memblokir kalau totalnya bukan 100% — cuma diperingatkan di tampilan, supaya
+     * admin tetap bisa nyimpen kerjaan yang belum kelar disusun.
+     */
+    public function updateBobot(Request $request)
+    {
+        $jenisIndikator = config('sikoor.jenis_indikator', []);
+
+        $validated = $request->validate([
+            'bobot' => 'required|array',
+            'bobot.*' => 'required|numeric|min:0|max:100',
+        ]);
+
+        foreach ($validated['bobot'] as $judul => $nilai) {
+            if (! in_array($judul, $jenisIndikator, true)) {
+                continue; // abaikan kalau ada judul yang bukan dari daftar baku
+            }
+
+            IndikatorBobot::updateOrCreate(['judul' => $judul], ['bobot' => $nilai]);
+        }
+
+        return redirect()->back()->with('success', 'Bobot indikator berhasil disimpan.');
     }
 
     /**
@@ -108,13 +136,13 @@ class IndicatorController extends Controller
     }
 
     /**
-     * Ringkasan per jenis indikator untuk bulan berjalan, menggantikan daftar mentah
-     * "Daftar indicator" yang lama. Sengaja dibuat pakai kategori & warna traffic-light
-     * (Hijau/Kuning/Merah) yang SAMA PERSIS dengan panel "Monitoring Indikator IKPA"
-     * di halaman dashboard (lihat routes/web.php), supaya admin lihat status yang
-     * konsisten baik dari halaman ini maupun dari dashboard monitoring.
+     * Ringkasan per jenis indikator untuk bulan berjalan, dipakai di panel kartu
+     * "Indikator IKPA". Kategori nilainya (Sangat Baik/Baik/Cukup/Kurang) SAMA PERSIS
+     * ambang batasnya dengan panel "Monitoring Indikator IKPA" di dashboard — cuma
+     * wording status di kartu ini pakai istilah "Sesuai target / Perlu perhatian /
+     * Perlu tindak lanjut segera" (bukan Hijau/Kuning/Merah) sesuai desain kartu.
      */
-    private function ringkasanIndikatorBulanIni($indicators, array $jenisIndikator)
+    private function ringkasanIndikatorBulanIni($indicators, array $jenisIndikator, $bobotIndikator = null)
     {
         $awalBulanIni = now()->startOfMonth();
         $akhirBulanIni = now()->endOfMonth();
@@ -135,16 +163,16 @@ class IndicatorController extends Controller
             return 'Kurang';
         };
 
-        $trafficLight = function (?float $nilai) use ($kategoriIkpa) {
+        $statusKartu = function (?float $nilai) use ($kategoriIkpa) {
             return match ($kategoriIkpa($nilai)) {
-                'Sangat Baik', 'Baik' => ['warna' => 'Hijau', 'kelas' => 'bg-emerald-50 text-emerald-600'],
-                'Cukup' => ['warna' => 'Kuning', 'kelas' => 'bg-amber-50 text-amber-600'],
-                'Kurang' => ['warna' => 'Merah', 'kelas' => 'bg-red-50 text-red-600'],
-                default => ['warna' => 'Belum Ada Laporan', 'kelas' => 'bg-slate-100 text-slate-500'],
+                'Sangat Baik', 'Baik' => ['label' => 'Sesuai target', 'kelas_teks' => 'text-emerald-600', 'kelas_bar' => 'bg-emerald-500', 'icon' => 'ti-circle-check'],
+                'Cukup' => ['label' => 'Perlu perhatian', 'kelas_teks' => 'text-amber-600', 'kelas_bar' => 'bg-amber-500', 'icon' => 'ti-alert-triangle'],
+                'Kurang' => ['label' => 'Perlu tindak lanjut segera', 'kelas_teks' => 'text-red-600', 'kelas_bar' => 'bg-red-500', 'icon' => 'ti-circle-x'],
+                default => ['label' => 'Belum ada laporan', 'kelas_teks' => 'text-slate-400', 'kelas_bar' => 'bg-slate-300', 'icon' => 'ti-minus-circle'],
             };
         };
 
-        return collect($jenisIndikator)->map(function ($judul) use ($indicators, $awalBulanIni, $akhirBulanIni, $trafficLight) {
+        return collect($jenisIndikator)->map(function ($judul) use ($indicators, $awalBulanIni, $akhirBulanIni, $statusKartu, $bobotIndikator) {
             $tugasBulanIni = $indicators->filter(fn ($ind) => $ind->judul === $judul
                 && $ind->periode
                 && $ind->periode->between($awalBulanIni, $akhirBulanIni));
@@ -158,15 +186,18 @@ class IndicatorController extends Controller
                 ->filter(fn ($n) => ! is_null($n));
 
             $rata = $nilaiList->isNotEmpty() ? round((float) $nilaiList->avg(), 2) : null;
-            $tl = $trafficLight($rata);
+            $status = $statusKartu($rata);
 
             return [
                 'judul' => $judul,
+                'bobot' => $bobotIndikator ? (float) ($bobotIndikator[$judul] ?? 0) : 0,
                 'total_satker' => $totalSatker,
                 'sudah_lapor' => $sudahLapor,
                 'rata' => $rata,
-                'warna' => $tl['warna'],
-                'kelas' => $tl['kelas'],
+                'status_label' => $status['label'],
+                'kelas_teks' => $status['kelas_teks'],
+                'kelas_bar' => $status['kelas_bar'],
+                'icon' => $status['icon'],
             ];
         });
     }

@@ -138,6 +138,7 @@ Route::get('/dashboard', function () {
         Route::get('/indicators', [IndicatorController::class, 'index'])->name('indicators.index');
         Route::post('/indicators', [IndicatorController::class, 'store'])->name('indicators.store');
         Route::get('/indicators/{id}', [IndicatorController::class, 'show'])->name('indicators.show');
+        Route::post('/indicators-bobot', [IndicatorController::class, 'updateBobot'])->name('indicators.bobot.update');
         Route::post('/indicator-results/{id}/nilai', [IndicatorResultController::class, 'updateStatus'])->name('indicator-results.updateStatus');
 
         Route::get('/satkers', [SatkerController::class, 'index'])->name('satkers.index');

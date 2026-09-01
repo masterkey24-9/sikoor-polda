@@ -70,9 +70,7 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-
-    <div class="bg-white rounded-xl border border-slate-200 p-6">
+    <div class="bg-white rounded-xl border border-slate-200 p-6 max-w-xl">
         <p class="text-sm font-medium text-slate-700 mb-4">Buat indicator baru</p>
 
         <form method="POST" action="{{ route('indicators.store') }}" enctype="multipart/form-data" class="space-y-4" id="indicatorForm">
@@ -163,42 +161,85 @@
         </form>
     </div>
 
-    {{-- Ringkasan dipakai sebagai <details> (disclosure widget bawaan browser, tanpa JS):
-         di layar lebar (lg ke atas) otomatis kebuka duluan ("open") dan duduk sejajar
-         di samping form. Kalau layarnya sempit dan dia jatuh ke bawah form, judulnya
-         tetap bisa diklik untuk collapse/expand, jadi nggak makan tempat vertikal. --}}
-    <details open class="bg-white rounded-xl border border-slate-200 p-6 group">
-        <summary class="cursor-pointer list-none flex items-center justify-between">
-            <span>
-                <span class="block text-sm font-medium text-slate-700">Ringkasan Indikator Bulan Ini</span>
-                <span class="block text-xs text-slate-400 mt-0.5">Status &amp; warna sama persis dengan panel "Monitoring Indikator IKPA" di dashboard.</span>
-            </span>
-            <i class="ti ti-chevron-down text-slate-400 shrink-0 ml-3 transition-transform group-open:rotate-180"></i>
-        </summary>
+    {{-- ================= INDIKATOR IKPA (kartu per jenis, bulan berjalan) ================= --}}
+    <div class="mt-6">
+        <p class="text-sm font-medium text-slate-700">Indikator IKPA</p>
+        <p class="text-xs text-slate-400 mb-4">Rata-rata capaian tiap indikator periode {{ now()->translatedFormat('F Y') }}</p>
 
-        <div class="mt-4 -mx-6 border-t border-slate-100 divide-y divide-slate-100">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @forelse ($ringkasanIndikator ?? [] as $item)
-                <div class="flex items-center justify-between gap-4 px-6 py-4">
-                    <div class="min-w-0">
-                        <p class="text-sm font-medium text-slate-800 truncate">{{ $item['judul'] }}</p>
-                        <p class="text-xs text-slate-400 mt-0.5">
-                            {{ $item['sudah_lapor'] }}/{{ $item['total_satker'] }} satker sudah lapor
-                            @if (! is_null($item['rata']))
-                                &middot; Rata-rata nilai {{ number_format($item['rata'], 2) }}
-                            @endif
-                        </p>
+                <div class="bg-white rounded-xl border border-slate-200 p-5">
+                    <div class="flex items-start justify-between gap-2 mb-3">
+                        <p class="text-sm font-medium text-slate-800">{{ $item['judul'] }}</p>
+                        <span class="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700">
+                            Bobot {{ number_format($item['bobot'], 2) }}%
+                        </span>
                     </div>
-                    <span class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium {{ $item['kelas'] }}">
-                        {{ $item['warna'] }}
-                    </span>
+
+                    <p class="text-2xl font-display font-semibold text-navy-900">
+                        {{ !is_null($item['rata']) ? number_format($item['rata'], 2, ',', '.') . '%' : '-' }}
+                    </p>
+
+                    <div class="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden mt-2 mb-2">
+                        <div class="h-full rounded-full {{ $item['kelas_bar'] }}"
+                             style="width: {{ !is_null($item['rata']) ? min(100, max(2, $item['rata'])) : 0 }}%"></div>
+                    </div>
+
+                    <p class="text-xs font-medium {{ $item['kelas_teks'] }} flex items-center gap-1">
+                        <i class="ti {{ $item['icon'] }} text-sm"></i> {{ $item['status_label'] }}
+                    </p>
                 </div>
             @empty
-                <p class="px-6 py-8 text-center text-sm text-slate-400">Belum ada jenis indikator terdaftar.</p>
+                <p class="col-span-3 text-sm text-slate-400 text-center py-10">Belum ada jenis indikator terdaftar.</p>
             @endforelse
         </div>
-    </details>
-
     </div>
+
+    {{-- ================= PENGATURAN BOBOT INDIKATOR ================= --}}
+    <div class="bg-white rounded-xl border border-slate-200 mt-6">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <p class="text-sm font-medium text-slate-700">Pengaturan Bobot Indikator</p>
+            <p class="text-xs mt-0.5 {{ ($totalBobot ?? 0) == 100 ? 'text-slate-400' : 'text-amber-600' }}">
+                Total bobot saat ini: {{ number_format($totalBobot ?? 0, 2) }}%
+                @if (($totalBobot ?? 0) != 100)
+                    &middot; Idealnya berjumlah 100%
+                @endif
+            </p>
+        </div>
+
+        <form method="POST" action="{{ route('indicators.bobot.update') }}">
+            @csrf
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-xs text-slate-400 border-b border-slate-100">
+                        <th class="text-left font-medium px-6 py-2.5 w-20">Kode</th>
+                        <th class="text-left font-medium px-6 py-2.5">Nama Indikator</th>
+                        <th class="text-left font-medium px-6 py-2.5 w-40">Bobot (%)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach ($jenisIndikator ?? [] as $i => $judul)
+                        <tr>
+                            <td class="px-6 py-2.5 text-slate-500">IK{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</td>
+                            <td class="px-6 py-2.5 text-slate-700">{{ $judul }}</td>
+                            <td class="px-6 py-2.5">
+                                <input type="number" name="bobot[{{ $judul }}]" step="0.01" min="0" max="100"
+                                       value="{{ old('bobot.' . $judul, $bobotIndikator[$judul] ?? 0) }}"
+                                       class="w-24 h-9 px-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <div class="px-6 py-4">
+                <button type="submit"
+                        class="h-10 px-4 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium transition">
+                    Simpan Bobot
+                </button>
+            </div>
+        </form>
+    </div>
+
 
 @endsection
 
