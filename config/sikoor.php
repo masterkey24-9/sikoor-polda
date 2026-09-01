@@ -28,22 +28,35 @@ return [
     | Ambang batas kategori warna kinerja satker
     |--------------------------------------------------------------------------
     |
-    | Skor akhir >= ambang_hijau                    => 'Hijau'
-    | Skor akhir >= ambang_kuning (tapi < hijau)     => 'Kuning'
-    | Skor akhir <  ambang_kuning                    => 'Merah'
+    | Ada 2 skema ambang batas yang dipakai di aplikasi ini untuk 2 keperluan
+    | yang beda (jangan dihapus salah satunya walau namanya mirip):
+    |
+    | 1. ambang_baik / ambang_cukup — dipakai untuk kolom "Status" satker
+    |    (Baik / Cukup / Perlu Perhatian) di dashboard & panel prioritas.
+    |    Skor akhir >= ambang_baik                  => 'Baik'
+    |    Skor akhir >= ambang_cukup (tapi < baik)    => 'Cukup'
+    |    Skor akhir <  ambang_cukup                  => 'Perlu Perhatian'
+    |
+    | 2. ikpa_ambang_* — dipakai untuk kolom "Kategori" ala e-MONEV Kemenkeu
+    |    (Sangat Baik / Baik / Cukup / Kurang), dipakai di badge warna,
+    |    traffic-light indikator, dan notifikasi otomatis.
+    |
+    | 3. ambang_hijau / ambang_kuning — skema lama (Hijau/Kuning/Merah),
+    |    dipertahankan untuk kompatibilitas kalau masih dipakai di bagian lain.
+    |    Skor akhir >= ambang_hijau                  => 'Hijau'
+    |    Skor akhir >= ambang_kuning (tapi < hijau)   => 'Kuning'
+    |    Skor akhir <  ambang_kuning                  => 'Merah'
     |
     */
 
-<<<<<<< HEAD
     'ambang_baik' => 85,
     'ambang_cukup' => 60,
     'ikpa_ambang_sangat_baik' => 90,
     'ikpa_ambang_baik' => 80,
     'ikpa_ambang_cukup' => 70,
-=======
+
     'ambang_hijau' => 95,
     'ambang_kuning' => 89,
->>>>>>> 99e40b150c528c51c17e3fc3aa26fb94f75ef9c6
 
     /*
     |--------------------------------------------------------------------------
