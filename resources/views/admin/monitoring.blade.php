@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Monitoring')
+@section('title', 'Monitoring IKPA')
 @section('page-title', 'Monitoring IKPA')
 
 @section('sidebar')
@@ -115,7 +115,6 @@
         @endif
     </form>
 
-    {{-- Info periode aktif: konfirmasi ke admin data yang sedang ditampilkan periode/satker apa --}}
     <p class="text-xs text-slate-500 mb-6">
         Menampilkan data periode:
         <span class="font-medium text-slate-700">{{ $labelPeriodeAktif ?? (isset($periodeAktif) ? $periodeAktif->translatedFormat('F Y') : now()->translatedFormat('F Y')) }}</span>
@@ -129,6 +128,7 @@
         @endif
     </p>
 
+<<<<<<< HEAD
     {{-- ================= 1. KARTU RINGKASAN ================= --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
 
@@ -369,6 +369,11 @@
     <div id="tabel" class="bg-white rounded-xl border border-slate-200 p-5 scroll-mt-6">
         <p class="text-sm font-medium text-slate-700 mb-3">Peringkat Kinerja Satker</p>
         <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
+=======
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <p class="text-sm font-medium text-slate-700 mb-3">Monitoring IKPA Terbaru</p>
+        <div class="overflow-x-auto max-h-[70vh] overflow-y-auto">
+>>>>>>> a1006c07f8ad677c344ec6c364a782fe2871152b
             <table class="w-full text-sm min-w-[1180px]">
                 <thead class="sticky top-0 bg-white">
                     <tr class="text-xs text-slate-400 border-b border-slate-100">
@@ -461,7 +466,6 @@
     </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
     // Tampilkan input periode yang sesuai dengan mode granularitas yang dipilih
     function toggleFilterPeriode(mode) {
@@ -479,148 +483,6 @@
             el.classList.toggle('gap-2', key !== 'bulanan' && key !== 'tahunan' && key === mode);
         });
     }
-
-    // ===== 1) Trend Nilai IKPA Rata-rata — line chart dengan gradasi =====
-    const trendLabels = @json(($trendBulanan ?? collect())->pluck('bulan'));
-    const trendNilai = @json(($trendBulanan ?? collect())->pluck('nilai'));
-
-    const ctxTrend = document.getElementById('chartTrendIkpa').getContext('2d');
-    const gradientTrend = ctxTrend.createLinearGradient(0, 0, 0, 220);
-    gradientTrend.addColorStop(0, 'rgba(212, 175, 55, 0.35)');
-    gradientTrend.addColorStop(1, 'rgba(212, 175, 55, 0)');
-
-    new Chart(ctxTrend, {
-        type: 'line',
-        data: {
-            labels: trendLabels,
-            datasets: [{
-                label: 'Nilai IKPA rata-rata',
-                data: trendNilai,
-                borderColor: '#D4AF37',
-                backgroundColor: gradientTrend,
-                borderWidth: 2.5,
-                tension: 0.4,
-                fill: true,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#5C3B1E',
-                pointBorderColor: '#D4AF37',
-                pointBorderWidth: 2,
-            }]
-        },
-        options: {
-            responsive: true,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#3B2312',
-                    padding: 10,
-                    cornerRadius: 8,
-                    callbacks: { label: (ctx) => 'Nilai: ' + ctx.raw }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true, max: 100,
-                    grid: { color: '#F1F5F9' }
-                },
-                x: { grid: { display: false } }
-            }
-        }
-    });
-
-    // ===== 2) Kategori Nilai IKPA Satker — doughnut dengan angka besar di tengah =====
-    const kategoriData = [{{ $totalSangatBaik ?? 0 }}, {{ $totalBaik ?? 0 }}, {{ $totalCukup ?? 0 }}, {{ $totalKurang ?? 0 }}];
-    const totalSatkerDinilai = kategoriData.reduce((a, b) => a + b, 0);
-
-    const centerTextPluginKategori = {
-        id: 'centerTextKategori',
-        afterDraw(chart) {
-            const { ctx, chartArea: { top, left, width, height } } = chart;
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
-            ctx.fillStyle = '#3B2312';
-            ctx.fillText(totalSatkerDinilai, left + width / 2, top + height / 2 - 8);
-            ctx.font = '500 11px Inter, sans-serif';
-            ctx.fillStyle = '#94A3B8';
-            ctx.fillText('Satker', left + width / 2, top + height / 2 + 14);
-            ctx.restore();
-        }
-    };
-
-    new Chart(document.getElementById('chartKategoriIkpa'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Sangat Baik (≥90)', 'Baik (80-89)', 'Cukup (70-79)', 'Kurang (<70)'],
-            datasets: [{
-                data: kategoriData,
-                backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444'],
-                borderWidth: 0,
-            }]
-        },
-        options: {
-            responsive: true,
-            cutout: '72%',
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#3B2312',
-                    padding: 10,
-                    cornerRadius: 8,
-                }
-            }
-        },
-        plugins: [centerTextPluginKategori]
-    });
-
-    // ===== 3) Progress Tindak Lanjut — doughnut dengan angka besar di tengah =====
-    const tindakLanjutData = [{{ $tindakLanjutSelesai ?? 0 }}, {{ $tindakLanjutProses ?? 0 }}, {{ $tindakLanjutBelum ?? 0 }}];
-    const totalTindakLanjutJs = {{ $totalTindakLanjut ?? 0 }};
-
-    const centerTextPluginTindakLanjut = {
-        id: 'centerTextTindakLanjut',
-        afterDraw(chart) {
-            const { ctx, chartArea: { top, left, width, height } } = chart;
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
-            ctx.fillStyle = '#3B2312';
-            ctx.fillText(totalTindakLanjutJs, left + width / 2, top + height / 2 - 8);
-            ctx.font = '500 11px Inter, sans-serif';
-            ctx.fillStyle = '#94A3B8';
-            ctx.fillText('Total', left + width / 2, top + height / 2 + 14);
-            ctx.restore();
-        }
-    };
-
-    new Chart(document.getElementById('chartTindakLanjut'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Selesai', 'Proses', 'Belum Ditindaklanjuti'],
-            datasets: [{
-                data: tindakLanjutData,
-                backgroundColor: ['#10B981', '#3B82F6', '#EF4444'],
-                borderWidth: 0,
-            }]
-        },
-        options: {
-            responsive: true,
-            cutout: '72%',
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#3B2312',
-                    padding: 10,
-                    cornerRadius: 8,
-                }
-            }
-        },
-        plugins: [centerTextPluginTindakLanjut]
-    });
 </script>
 @endpush
 

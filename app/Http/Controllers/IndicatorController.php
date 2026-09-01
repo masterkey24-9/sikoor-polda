@@ -65,8 +65,13 @@ class IndicatorController extends Controller
         $periode = $validated['periode'] ?? now()->format('Y-m');
         $periode .= '-01';
 
+        // Satu batch_id dipakai untuk semua baris Indicator yang dibuat dari submit form ini,
+        // supaya bisa ditampilkan sebagai satu riwayat pengiriman di halaman Riwayat Pengiriman.
+        $batchId = (string) \Illuminate\Support\Str::uuid();
+
         foreach ($validated['satker_id'] as $satkerId) {
             $indicator = Indicator::create([
+                'batch_id' => $batchId,
                 'judul' => $validated['judul'],
                 'deskripsi' => $validated['deskripsi'] ?? null,
                 'file_pdf' => $filePathPdf,
@@ -79,6 +84,74 @@ class IndicatorController extends Controller
         }
 
         return redirect()->back()->with('success', 'Indicator berhasil dibuat dan dikirim ke satker terpilih.');
+    }
+
+    /**
+     * Daftar riwayat pengiriman indicator: satu baris di sini = satu kali submit
+     * form "Buat & kirim indicator" (dikelompokkan lewat batch_id), bukan satu baris
+     * per satker. Dipakai admin untuk lihat kapan & indicator apa saja yang pernah
+     * dikirim, plus ringkasan berapa satker sudah lapor.
+     */
+    public function riwayat()
+    {
+        $batches = Indicator::with('results')
+            ->whereNotNull('batch_id')
+            ->get()
+            ->groupBy('batch_id')
+            ->map(function ($rows) {
+                $first = $rows->first();
+                $totalSatker = $rows->count();
+                $sudahLapor = $rows->filter(fn ($ind) => $ind->results->isNotEmpty())->count();
+
+                return (object) [
+                    'batch_id' => $first->batch_id,
+                    'judul' => $first->judul,
+                    'deskripsi' => $first->deskripsi,
+                    'periode' => $first->periode,
+                    'file_pdf' => $first->file_pdf,
+                    'file_excel' => $first->file_excel,
+                    'dikirim_pada' => $first->created_at,
+                    'total_satker' => $totalSatker,
+                    'sudah_lapor' => $sudahLapor,
+                ];
+            })
+            ->sortByDesc('dikirim_pada')
+            ->values();
+
+        return view('indicators.riwayat', compact('batches'));
+    }
+
+    /**
+     * Detail satu riwayat pengiriman: daftar semua satker tujuan pada batch itu,
+     * lengkap dengan status laporan masing-masing (belum lapor / menunggu dinilai /
+     * perlu direvisi / diterima), dipakai untuk memonitor satu pengiriman spesifik.
+     */
+    public function riwayatDetail(string $batchId)
+    {
+        $indicators = Indicator::with(['satker', 'results'])
+            ->where('batch_id', $batchId)
+            ->get();
+
+        if ($indicators->isEmpty()) {
+            abort(404);
+        }
+
+        $info = $indicators->first();
+
+        $daftarSatker = $indicators
+            ->map(function ($ind) {
+                $latestResult = $ind->results->sortByDesc('created_at')->first();
+
+                return (object) [
+                    'indicator_id' => $ind->id,
+                    'nama_satker' => $ind->satker->nama_satker ?? '-',
+                    'latest_result' => $latestResult,
+                ];
+            })
+            ->sortBy('nama_satker')
+            ->values();
+
+        return view('indicators.riwayat-detail', compact('batchId', 'info', 'daftarSatker'));
     }
 
     /**

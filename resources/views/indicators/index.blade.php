@@ -9,6 +9,13 @@
 
 @section('content')
 
+    <div class="flex items-center justify-end mb-4">
+        <a href="{{ route('indicators.riwayat') }}"
+           class="h-10 px-4 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm font-medium text-slate-700 flex items-center gap-2">
+            <i class="ti ti-history text-sm"></i> Riwayat Pengiriman
+        </a>
+    </div>
+
     @if (session('success') || session('status'))
         <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3">
             {{ session('success') ?? session('status') }}
