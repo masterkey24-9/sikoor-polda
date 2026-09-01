@@ -44,6 +44,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'last_seen_at' => 'datetime',
+        'password_changed_at' => 'datetime',
     ];
 
     /**
@@ -62,6 +63,16 @@ class User extends Authenticatable
     {
         return $this->last_seen_at !== null
             && $this->last_seen_at->gt(now()->subSeconds($thresholdSeconds));
+    }
+
+    /**
+     * True kalau user (khusus role satker) belum pernah mengganti password-nya
+     * sendiri sejak akun dibuat/direset admin — dipakai middleware
+     * EnsurePasswordIsChanged untuk memaksa ganti password di login pertama.
+     */
+    public function mustChangePassword(): bool
+    {
+        return $this->role === 'satker' && is_null($this->password_changed_at);
     }
 
     /**

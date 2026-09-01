@@ -13,6 +13,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 0. Seed 8 indikator IKPA baku beserta bobotnya
+        $this->call(IkpaBobotIndikatorSeeder::class);
+
         // 1. Buat daftar satker (aman dijalankan berkali-kali, tidak akan dobel)
         $daftarSatker = [
             'Polresta Padang',

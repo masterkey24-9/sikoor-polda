@@ -29,11 +29,18 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'role' => ['required', 'string', 'in:admin,satker'],
         ];
     }
 
     /**
      * Attempt to authenticate the request's credentials.
+     *
+     * Selain email/password, form login sekarang punya tab pilihan role
+     * (Admin / Satker). Kredensial harus benar DAN role yang dipilih di tab
+     * harus sama dengan role akun tsb di database — supaya akun admin tidak
+     * bisa dipakai login lewat tab Satker (atau sebaliknya), dan pesan error
+     * yang tampil lebih jelas ("akun ini bukan akun Satker", dst).
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -46,6 +53,17 @@ class LoginRequest extends FormRequest
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
+            ]);
+        }
+
+        if (Auth::user()->role !== $this->input('role')) {
+            Auth::logout();
+            RateLimiter::hit($this->throttleKey());
+
+            $labelRole = $this->input('role') === 'admin' ? 'Admin' : 'Satker';
+
+            throw ValidationException::withMessages([
+                'email' => "Akun ini bukan akun {$labelRole}. Silakan pilih tab peran yang sesuai.",
             ]);
         }
 

@@ -1,17 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Monitoring')
-@section('page-title', 'Monitoring IKPA')
+@section('title', 'Monitoring Kinerja')
+@section('page-title', 'Monitoring Kinerja Satker')
 
 @section('sidebar')
-    @include('components.sidebar-admin')
+    @include('components.sidebar-user')
 @endsection
 
 @section('content')
-
-    <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 text-sm text-navy-800 hover:underline mb-4">
-        <i class="ti ti-arrow-left text-base"></i> Kembali ke Dashboard
-    </a>
 
     @php
         $granularitas = $granularitas ?? 'bulanan';
@@ -19,22 +15,28 @@
         $triwulanAktif = $triwulanAktif ?? ceil(now()->month / 3);
         $semesterAktif = $semesterAktif ?? (now()->month <= 6 ? 1 : 2);
         $tahunOpsi = range(now()->year, now()->year - 5);
+        $sp = ($satkerPerformance ?? collect())->first();
+
+        // Disiapkan di sini (bukan langsung di dalam @json() di script) supaya Blade
+        // tidak salah hitung tanda kurung/kurawal dari closure multi-baris.
+        $dokumenBaruJs = ($dokumenBaru ?? collect())->map(function ($d) {
+            return [
+                'id' => $d->id,
+                'judul' => $d->judul,
+                'deskripsi' => $d->deskripsi,
+                'file_pdf_url' => $d->file_pdf ? asset('storage/' . $d->file_pdf) : null,
+                'file_excel_url' => $d->file_excel ? asset('storage/' . $d->file_excel) : null,
+            ];
+        })->values();
     @endphp
 
-    <form method="GET" action="{{ route('monitoring.ikpa') }}" class="flex flex-wrap items-end gap-3 mb-3">
-        <div>
-            <label for="filterSatker" class="block text-xs font-medium text-slate-500 mb-1.5">Pilih Satker</label>
-            <select id="filterSatker" name="satker_id"
-                    class="h-10 px-3.5 rounded-lg border border-slate-300 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-navy-800">
-                <option value="">Semua satker</option>
-                @foreach ($satkers ?? [] as $satker)
-                    <option value="{{ $satker->id }}" @selected(request('satker_id') == $satker->id)>
-                        {{ $satker->nama_satker }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
+    <p class="text-sm text-slate-500 mb-4">
+        Halaman ini hanya menampilkan performa satker Anda sendiri —
+        <span class="font-medium text-slate-700">{{ $satker->nama_satker ?? '-' }}</span>.
+    </p>
 
+    {{-- ================= FILTER PERIODE (tanpa pilihan satker lain) ================= --}}
+    <form method="GET" action="{{ route('monitoring.saya') }}" class="flex flex-wrap items-end gap-3 mb-3">
         <div>
             <label for="filterGranularitas" class="block text-xs font-medium text-slate-500 mb-1.5">Tampilan Periode</label>
             <select id="filterGranularitas" name="granularitas" onchange="toggleFilterPeriode(this.value)"
@@ -108,37 +110,28 @@
                 class="h-10 px-4 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium transition">
             Terapkan
         </button>
-        @if (request('satker_id') || request('periode') || request('granularitas') || request('tahun') || request('triwulan') || request('semester'))
-            <a href="{{ route('monitoring.ikpa') }}" class="h-10 px-4 rounded-lg border border-slate-300 text-sm text-slate-600 hover:bg-slate-50 flex items-center">
+        @if (request('periode') || request('granularitas') || request('tahun') || request('triwulan') || request('semester'))
+            <a href="{{ route('monitoring.saya') }}" class="h-10 px-4 rounded-lg border border-slate-300 text-sm text-slate-600 hover:bg-slate-50 flex items-center">
                 Reset ke bulan berjalan
             </a>
         @endif
     </form>
 
-    {{-- Info periode aktif: konfirmasi ke admin data yang sedang ditampilkan periode/satker apa --}}
     <p class="text-xs text-slate-500 mb-6">
         Menampilkan data periode:
         <span class="font-medium text-slate-700">{{ $labelPeriodeAktif ?? (isset($periodeAktif) ? $periodeAktif->translatedFormat('F Y') : now()->translatedFormat('F Y')) }}</span>
-        @if (request()->filled('satker_id'))
-            &middot; Satker:
-            <span class="font-medium text-slate-700">
-                {{ ($satkers ?? collect())->firstWhere('id', request('satker_id'))->nama_satker ?? '-' }}
-            </span>
-        @else
-            &middot; <span class="font-medium text-slate-700">Semua satker</span>
-        @endif
     </p>
 
     {{-- ================= 1. KARTU RINGKASAN ================= --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
 
         <div class="bg-white rounded-xl p-5 border border-slate-200">
             <div class="w-10 h-10 rounded-lg bg-navy-900 text-white flex items-center justify-center mb-3">
                 <i class="ti ti-trending-up text-lg"></i>
             </div>
-            <p class="text-xs font-medium text-slate-500 mb-1">Nilai IKPA Rata-rata</p>
+            <p class="text-xs font-medium text-slate-500 mb-1">Nilai IKPA Satker</p>
             <p class="text-2xl font-display font-semibold text-navy-900">
-                {{ !is_null($rataRataKinerja ?? null) ? number_format($rataRataKinerja, 2) : '-' }}
+                {{ !is_null($skorAkhir ?? null) ? number_format($skorAkhir, 2) : '-' }}
             </p>
             @if (! is_null($selisihBulanLalu ?? null))
                 <p class="text-xs mt-1 {{ $selisihBulanLalu >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
@@ -151,48 +144,34 @@
         </div>
 
         <div class="bg-white rounded-xl p-5 border border-slate-200">
-            <div class="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-3">
-                <i class="ti ti-circle-check text-lg"></i>
-            </div>
-            <p class="text-xs font-medium text-slate-500 mb-1">Satker Nilai &ge; 90</p>
-            <p class="text-2xl font-display font-semibold text-navy-900">{{ $totalSangatBaik ?? 0 }} Satker</p>
-            <p class="text-xs text-slate-400 mt-1">({{ number_format($persenSangatBaik ?? 0, 2) }}%)</p>
-        </div>
-
-        <div class="bg-white rounded-xl p-5 border border-slate-200">
-            <div class="w-10 h-10 rounded-lg bg-amber-500 text-white flex items-center justify-center mb-3">
-                <i class="ti ti-alert-triangle text-lg"></i>
-            </div>
-            <p class="text-xs font-medium text-slate-500 mb-1">Satker Perlu Perhatian</p>
-            <p class="text-2xl font-display font-semibold text-navy-900">{{ $totalPerluPerhatian ?? 0 }} Satker</p>
-            <p class="text-xs text-slate-400 mt-1">({{ number_format($persenPerluPerhatian ?? 0, 2) }}%)</p>
-        </div>
-
-        <div class="bg-white rounded-xl p-5 border border-slate-200">
-            <div class="w-10 h-10 rounded-lg bg-red-600 text-white flex items-center justify-center mb-3">
-                <i class="ti ti-alert-octagon text-lg"></i>
-            </div>
-            <p class="text-xs font-medium text-slate-500 mb-1">Satker Nilai &lt; 70</p>
-            <p class="text-2xl font-display font-semibold text-navy-900">{{ $totalKurang ?? 0 }} Satker</p>
-            <p class="text-xs text-slate-400 mt-1">({{ number_format($persenKurang ?? 0, 2) }}%)</p>
-        </div>
-
-        <div class="bg-white rounded-xl p-5 border border-slate-200">
             <div class="w-10 h-10 rounded-lg bg-gold-500 text-navy-950 flex items-center justify-center mb-3">
-                <i class="ti ti-building text-lg"></i>
+                <i class="ti ti-award text-lg"></i>
             </div>
-            <p class="text-xs font-medium text-slate-500 mb-1">Total Satker</p>
-            <p class="text-2xl font-display font-semibold text-navy-900">{{ $totalSatker ?? 0 }} Satker</p>
+            <p class="text-xs font-medium text-slate-500 mb-1">Kategori Nilai</p>
+            <span class="inline-flex px-2.5 py-1 rounded-full text-sm font-medium {{ $kategori['badge'] ?? 'bg-slate-100 text-slate-500' }}">
+                {{ $kategori['label'] ?? 'Belum Dinilai' }}
+            </span>
+        </div>
+
+        <div class="bg-white rounded-xl p-5 border border-slate-200">
+            <div class="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-3">
+                <i class="ti ti-list-check text-lg"></i>
+            </div>
+            <p class="text-xs font-medium text-slate-500 mb-1">Progres Tugas Periode Ini</p>
+            <p class="text-2xl font-display font-semibold text-navy-900">
+                {{ $sp->tugas_selesai ?? 0 }} / {{ $sp->total_tugas ?? 0 }}
+            </p>
+            <p class="text-xs text-slate-400 mt-1">tugas selesai dilaporkan</p>
         </div>
 
     </div>
 
-    {{-- ================= 2. TREND + KATEGORI + 5 TERENDAH ================= --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    {{-- ================= 2. TREND + INDIKATOR ================= --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
 
         <div id="trend" class="bg-white rounded-xl p-5 border border-slate-200 scroll-mt-6">
             <div class="flex items-center justify-between mb-1">
-                <p class="text-sm font-medium text-slate-700">Trend Nilai IKPA Rata-rata</p>
+                <p class="text-sm font-medium text-slate-700">Trend Nilai IKPA Satker</p>
 
                 @if (($granularitas ?? 'bulanan') === 'bulanan')
                     @php $trendRangeAktif = $trendRange ?? 6; @endphp
@@ -218,77 +197,6 @@
             </p>
             <canvas id="chartTrendIkpa" height="220"></canvas>
         </div>
-
-        <div id="kategori" class="bg-white rounded-xl p-5 border border-slate-200 scroll-mt-6">
-            <p class="text-sm font-medium text-slate-700 mb-3">Kategori Nilai IKPA Satker</p>
-            <div class="relative">
-                <canvas id="chartKategoriIkpa" height="180"></canvas>
-            </div>
-            <ul class="mt-4 space-y-2 text-xs">
-                <li class="flex items-center justify-between">
-                    <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> &ge; 90 (Sangat Baik)</span>
-                    <span class="text-slate-500">{{ $totalSangatBaik ?? 0 }} Satker ({{ number_format($persenSangatBaik ?? 0, 2) }}%)</span>
-                </li>
-                <li class="flex items-center justify-between">
-                    <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> 80 - 89 (Baik)</span>
-                    <span class="text-slate-500">{{ $totalBaik ?? 0 }} Satker ({{ number_format($persenBaik ?? 0, 2) }}%)</span>
-                </li>
-                <li class="flex items-center justify-between">
-                    <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 70 - 79 (Cukup)</span>
-                    <span class="text-slate-500">{{ $totalCukup ?? 0 }} Satker ({{ number_format($persenCukup ?? 0, 2) }}%)</span>
-                </li>
-                <li class="flex items-center justify-between">
-                    <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> &lt; 70 (Kurang)</span>
-                    <span class="text-slate-500">{{ $totalKurang ?? 0 }} Satker ({{ number_format($persenKurang ?? 0, 2) }}%)</span>
-                </li>
-            </ul>
-        </div>
-
-        <div id="prioritas" class="bg-white rounded-xl p-5 border border-slate-200 scroll-mt-6">
-            <p class="text-sm font-medium text-slate-700">Daftar Satker Prioritas Pembinaan</p>
-            <p class="text-[11px] text-slate-400 mb-3">Satker yang paling memerlukan perhatian, diurutkan dari prioritas tertinggi</p>
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="text-xs text-slate-400 border-b border-slate-100">
-                        <th class="text-left font-medium pb-2">Satker</th>
-                        <th class="text-right font-medium pb-2">Nilai</th>
-                        <th class="text-left font-medium pb-2 pl-3">Status</th>
-                        <th class="text-left font-medium pb-2 pl-3">Kategori</th>
-                        <th class="text-left font-medium pb-2 pl-3">Prioritas</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse ($satkerPrioritas ?? [] as $sp)
-                        <tr>
-                            <td class="py-2 text-slate-700">{{ $sp->nama_satker }}</td>
-                            <td class="py-2 text-right font-medium text-slate-700">
-                                {{ !is_null($sp->nilai) ? number_format($sp->nilai, 2) : '-' }}
-                            </td>
-                            <td class="py-2 pl-3 text-xs text-slate-500">{{ $sp->status }}</td>
-                            <td class="py-2 pl-3">
-                                <span class="px-2 py-0.5 rounded-full text-[11px] font-medium {{ $sp->kategori_badge }}">
-                                    {{ $sp->kategori_label }}
-                                </span>
-                            </td>
-                            <td class="py-2 pl-3">
-                                <span class="px-2 py-0.5 rounded-full text-[11px] font-medium {{ $sp->prioritas_badge }}">
-                                    {{ $sp->prioritas_label }}
-                                </span>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="py-4 text-center text-slate-400 text-xs">Belum ada satker yang dinilai.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-    </div>
-
-    {{-- ================= 3. NILAI PER INDIKATOR + NOTIFIKASI + TINDAK LANJUT ================= --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
 
         <div id="indikator" class="bg-white rounded-xl p-5 border border-slate-200 scroll-mt-6">
             <p class="text-sm font-medium text-slate-700 mb-3">Monitoring Indikator IKPA</p>
@@ -317,12 +225,17 @@
             </div>
 
             @if (($nilaiPerIndikator ?? collect())->isNotEmpty())
-                <a href="{{ route('indicators.index') }}"
+                <a href="{{ route('user.inbox') }}"
                    class="block text-center text-xs font-medium text-navy-800 hover:underline mt-4 pt-3 border-t border-slate-100">
-                    Lihat Detail Indikator
+                    Lihat Detail &amp; Kirim Laporan
                 </a>
             @endif
         </div>
+
+    </div>
+
+    {{-- ================= 3. NOTIFIKASI + TINDAK LANJUT ================= --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
 
         <div class="bg-white rounded-xl p-5 border border-slate-200">
             <p class="text-sm font-medium text-slate-700 mb-3">Notifikasi Terbaru</p>
@@ -365,14 +278,14 @@
 
     </div>
 
-    {{-- ================= 4. PERINGKAT KINERJA SATKER (nilai tertinggi = peringkat 1) ================= --}}
+    {{-- ================= 4. TABEL MONITORING IKPA (satker sendiri) ================= --}}
     <div id="tabel" class="bg-white rounded-xl border border-slate-200 p-5 scroll-mt-6">
-        <p class="text-sm font-medium text-slate-700 mb-3">Peringkat Kinerja Satker</p>
+        <p class="text-sm font-medium text-slate-700 mb-3">Monitoring IKPA Terbaru</p>
         <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
             <table class="w-full text-sm min-w-[1180px]">
                 <thead class="sticky top-0 bg-white">
                     <tr class="text-xs text-slate-400 border-b border-slate-100">
-                        <th class="text-left font-medium pb-2 w-8">Peringkat</th>
+                        <th class="text-left font-medium pb-2 w-8">No</th>
                         <th class="text-left font-medium pb-2">Satker</th>
                         <th class="text-right font-medium pb-2">Nilai IKPA</th>
                         <th class="text-left font-medium pb-2 pl-4">Kategori</th>
@@ -386,27 +299,9 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    {{-- Diurutkan dari nilai IKPA tertinggi ke terendah, jadi No urut = peringkat.
-                         Satker yang belum ada nilainya otomatis diletakkan paling bawah. --}}
-                    @forelse (($satkerPerformance ?? collect())->sortByDesc(fn ($sp) => $sp->nilai ?? -INF)->values() as $sp)
+                    @forelse (($satkerPerformance ?? collect()) as $sp)
                         <tr>
-                            <td class="py-2.5 text-slate-500">
-                                @if ($loop->iteration === 1 && ! is_null($sp->nilai))
-                                    <span class="inline-flex items-center gap-1 font-semibold text-gold-600">
-                                        <i class="ti ti-trophy text-sm"></i> 1
-                                    </span>
-                                @elseif ($loop->iteration === 2 && ! is_null($sp->nilai))
-                                    <span class="inline-flex items-center gap-1 font-semibold text-slate-500">
-                                        <i class="ti ti-medal text-sm"></i> 2
-                                    </span>
-                                @elseif ($loop->iteration === 3 && ! is_null($sp->nilai))
-                                    <span class="inline-flex items-center gap-1 font-semibold text-amber-700">
-                                        <i class="ti ti-medal text-sm"></i> 3
-                                    </span>
-                                @else
-                                    {{ $loop->iteration }}
-                                @endif
-                            </td>
+                            <td class="py-2.5 text-slate-500">{{ $loop->iteration }}</td>
                             <td class="py-2.5 text-slate-700">{{ $sp->nama_satker }}</td>
                             <td class="py-2.5 text-right font-medium text-slate-700">
                                 {{ !is_null($sp->nilai) ? number_format($sp->nilai, 2) : '-' }}
@@ -436,15 +331,15 @@
                             </td>
                             <td class="py-2.5">
                                 <div class="flex items-center justify-center gap-1.5">
-                                    <a href="{{ route('indicators.index') }}"
+                                    <a href="{{ route('user.inbox') }}"
                                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-navy-900/5 text-navy-900 hover:bg-navy-900/10"
-                                       title="Lihat indikator satker ini">
+                                       title="Lihat detail & kirim laporan">
                                         <i class="ti ti-eye text-base"></i>
                                     </a>
-                                    <a href="{{ route('monitoring.cetak', array_merge(['satker' => $sp->id], request()->only(['granularitas', 'periode', 'tahun', 'triwulan', 'semester']))) }}"
+                                    <a href="{{ route('monitoring.cetak.saya', request()->only(['granularitas', 'periode', 'tahun', 'triwulan', 'semester'])) }}"
                                        target="_blank"
                                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-navy-900/5 text-navy-900 hover:bg-navy-900/10"
-                                       title="Cetak laporan satker ini">
+                                       title="Cetak laporan satker saya">
                                         <i class="ti ti-printer text-base"></i>
                                     </a>
                                 </div>
@@ -452,7 +347,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="py-6 text-center text-slate-400 text-xs">Belum ada data satker.</td>
+                            <td colspan="11" class="py-6 text-center text-slate-400 text-xs">Belum ada data untuk periode ini.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -480,7 +375,7 @@
         });
     }
 
-    // ===== 1) Trend Nilai IKPA Rata-rata — line chart dengan gradasi =====
+    // ===== Trend Nilai IKPA — line chart dengan gradasi =====
     const trendLabels = @json(($trendBulanan ?? collect())->pluck('bulan'));
     const trendNilai = @json(($trendBulanan ?? collect())->pluck('nilai'));
 
@@ -494,7 +389,7 @@
         data: {
             labels: trendLabels,
             datasets: [{
-                label: 'Nilai IKPA rata-rata',
+                label: 'Nilai IKPA',
                 data: trendNilai,
                 borderColor: '#D4AF37',
                 backgroundColor: gradientTrend,
@@ -530,53 +425,7 @@
         }
     });
 
-    // ===== 2) Kategori Nilai IKPA Satker — doughnut dengan angka besar di tengah =====
-    const kategoriData = [{{ $totalSangatBaik ?? 0 }}, {{ $totalBaik ?? 0 }}, {{ $totalCukup ?? 0 }}, {{ $totalKurang ?? 0 }}];
-    const totalSatkerDinilai = kategoriData.reduce((a, b) => a + b, 0);
-
-    const centerTextPluginKategori = {
-        id: 'centerTextKategori',
-        afterDraw(chart) {
-            const { ctx, chartArea: { top, left, width, height } } = chart;
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
-            ctx.fillStyle = '#3B2312';
-            ctx.fillText(totalSatkerDinilai, left + width / 2, top + height / 2 - 8);
-            ctx.font = '500 11px Inter, sans-serif';
-            ctx.fillStyle = '#94A3B8';
-            ctx.fillText('Satker', left + width / 2, top + height / 2 + 14);
-            ctx.restore();
-        }
-    };
-
-    new Chart(document.getElementById('chartKategoriIkpa'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Sangat Baik (≥90)', 'Baik (80-89)', 'Cukup (70-79)', 'Kurang (<70)'],
-            datasets: [{
-                data: kategoriData,
-                backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444'],
-                borderWidth: 0,
-            }]
-        },
-        options: {
-            responsive: true,
-            cutout: '72%',
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#3B2312',
-                    padding: 10,
-                    cornerRadius: 8,
-                }
-            }
-        },
-        plugins: [centerTextPluginKategori]
-    });
-
-    // ===== 3) Progress Tindak Lanjut — doughnut dengan angka besar di tengah =====
+    // ===== Progress Tindak Lanjut — doughnut dengan angka besar di tengah =====
     const tindakLanjutData = [{{ $tindakLanjutSelesai ?? 0 }}, {{ $tindakLanjutProses ?? 0 }}, {{ $tindakLanjutBelum ?? 0 }}];
     const totalTindakLanjutJs = {{ $totalTindakLanjut ?? 0 }};
 
@@ -595,6 +444,129 @@
             ctx.fillText('Total', left + width / 2, top + height / 2 + 14);
             ctx.restore();
         }
+    };
+
+    // ===== Dokumen baru dari Admin (auto-terbuka) =====
+    // 1) Kalau ada dokumen baru dari server-side, modalnya otomatis tampil begitu
+    //    halaman ini pertama kali dimuat — begitu tampil, langsung ditandai "dibuka".
+    // 2) Selama satker masih standby di halaman ini (tanpa reload), dicek berkala
+    //    (polling) ke server; kalau admin baru saja kirim dokumen, modal otomatis
+    //    muncul sendiri tanpa satker perlu refresh atau klik notifikasi.
+    (function () {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const dokumenAwal = @json($dokumenBaruJs);
+        const idSudahDitampilkan = new Set(dokumenAwal.map(d => d.id));
+
+        function tandaiDibuka(id) {
+            fetch(`/dokumen/${id}/dibuka`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+            }).catch(() => {});
+        }
+
+        function buatKartuDokumen(dok) {
+            const pdfHtml = dok.file_pdf_url ? `
+                <div class="p-3">
+                    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
+                        <i class="ti ti-file-type-pdf text-red-500"></i> Lampiran PDF
+                    </div>
+                    <iframe src="${dok.file_pdf_url}" class="w-full h-[75vh] rounded-lg border border-slate-200"></iframe>
+                </div>` : '';
+
+            const excelHtml = dok.file_excel_url ? `
+                <div class="px-4 pb-4 ${dok.file_pdf_url ? 'pt-0' : 'pt-3'}">
+                    <a href="${dok.file_excel_url}" target="_blank"
+                       class="inline-flex items-center gap-2 px-3.5 h-10 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium hover:bg-emerald-100 transition">
+                        <i class="ti ti-file-type-xls text-sm"></i> Buka lampiran Excel
+                    </a>
+                    <p class="text-[11px] text-slate-400 mt-1.5">File Excel tidak bisa ditampilkan langsung di halaman, klik untuk membukanya.</p>
+                </div>` : '';
+
+            const deskripsiHtml = dok.deskripsi
+                ? `<p class="text-xs text-slate-400 truncate">${dok.deskripsi}</p>` : '';
+
+            return `
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <div class="px-4 py-3 bg-slate-50 flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-slate-800 truncate">${dok.judul}</p>
+                            ${deskripsiHtml}
+                        </div>
+                        <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gold-500/20 text-gold-700">Baru</span>
+                    </div>
+                    ${pdfHtml}
+                    ${excelHtml}
+                </div>`;
+        }
+
+        function tampilkanModal(daftarDokumen) {
+            const existing = document.getElementById('modalDokumenBaru');
+            if (existing) existing.remove();
+
+            const wrapper = document.createElement('div');
+            wrapper.id = 'modalDokumenBaru';
+            wrapper.className = 'fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 backdrop-blur-sm p-4';
+            wrapper.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-9 h-9 rounded-lg bg-gold-500 text-navy-950 flex items-center justify-center shrink-0">
+                                <i class="ti ti-file-import text-lg"></i>
+                            </span>
+                            <div>
+                                <p class="text-sm font-semibold text-navy-900">Dokumen baru dari Admin</p>
+                                <p class="text-xs text-slate-400">${daftarDokumen.length} dokumen baru diterima</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="sikoorTutupDokumenBaru()"
+                                class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                            <i class="ti ti-x text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+                        ${daftarDokumen.map(buatKartuDokumen).join('')}
+                    </div>
+                    <div class="px-5 py-4 border-t border-slate-100 flex justify-end shrink-0">
+                        <button type="button" onclick="sikoorTutupDokumenBaru()"
+                                class="h-10 px-4 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium transition">
+                            Sudah dibaca, tutup
+                        </button>
+                    </div>
+                </div>`;
+            document.body.appendChild(wrapper);
+        }
+
+        // Tandai dokumen yang sudah tampil dari server-side render saat page load pertama,
+        // dan langsung tampilkan modalnya (tanpa perlu tunggu polling).
+        if (dokumenAwal.length) {
+            tampilkanModal(dokumenAwal);
+            dokumenAwal.forEach(dok => tandaiDibuka(dok.id));
+        }
+
+        // Polling tiap 15 detik selama satker masih di halaman ini.
+        setInterval(function () {
+            if (document.hidden) return; // tidak usah cek kalau tab sedang tidak aktif
+            fetch(`{{ route('dokumen.cekBaru') }}`, {
+                headers: { 'Accept': 'application/json' },
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const baru = (data.dokumen || []).filter(d => ! idSudahDitampilkan.has(d.id));
+                    if (! baru.length) return;
+
+                    baru.forEach(d => idSudahDitampilkan.add(d.id));
+                    tampilkanModal(baru);
+                    baru.forEach(d => tandaiDibuka(d.id));
+                })
+                .catch(() => {});
+        }, 15000);
+    })();
+
+    window.sikoorTutupDokumenBaru = function () {
+        document.getElementById('modalDokumenBaru')?.remove();
     };
 
     new Chart(document.getElementById('chartTindakLanjut'), {

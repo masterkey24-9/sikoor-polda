@@ -97,8 +97,29 @@
                     </div>
                 @endif
 
+                @php
+                    $roleAktif = old('role', 'admin');
+                @endphp
+
+                {{-- Tab pemilih role: menentukan portal mana yang akan diakses (Admin polda
+                     atau Satker). Nilainya dikirim sebagai input "role" tersembunyi dan wajib
+                     cocok dengan role akun di database (divalidasi di LoginRequest::authenticate). --}}
+                <div id="roleTabs" class="grid grid-cols-2 gap-1 p-1 rounded-lg bg-slate-100 mb-5">
+                    <button type="button" data-role="admin"
+                            onclick="pilihRoleLogin('admin')"
+                            class="role-tab-btn h-9 rounded-md text-sm font-medium transition">
+                        Admin
+                    </button>
+                    <button type="button" data-role="satker"
+                            onclick="pilihRoleLogin('satker')"
+                            class="role-tab-btn h-9 rounded-md text-sm font-medium transition">
+                        Satker
+                    </button>
+                </div>
+
                 <form method="POST" action="{{ route('login') }}" class="space-y-4">
                     @csrf
+                    <input type="hidden" id="role" name="role" value="{{ $roleAktif }}">
 
                     <div>
                         <label for="email" class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
@@ -122,7 +143,7 @@
 
                     <button type="submit"
                             class="w-full h-11 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium transition">
-                        Masuk
+                        Masuk sebagai <span id="roleTabLabelTombol">Admin</span>
                     </button>
                 </form>
             </div>
@@ -133,4 +154,25 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function pilihRoleLogin(role) {
+        document.getElementById('role').value = role;
+        document.getElementById('roleTabLabelTombol').textContent = role === 'admin' ? 'Admin' : 'Satker';
+
+        document.querySelectorAll('.role-tab-btn').forEach(function (btn) {
+            const aktif = btn.dataset.role === role;
+            btn.classList.toggle('bg-white', aktif);
+            btn.classList.toggle('shadow-sm', aktif);
+            btn.classList.toggle('text-navy-900', aktif);
+            btn.classList.toggle('text-slate-500', !aktif);
+        });
+    }
+
+    // Set tampilan awal tab sesuai role yang aktif (default 'admin', atau
+    // hasil old('role') kalau form baru saja gagal divalidasi).
+    pilihRoleLogin(document.getElementById('role').value);
+</script>
+@endpush
 @endsection

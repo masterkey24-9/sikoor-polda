@@ -102,7 +102,7 @@ class NotificationController extends Controller
             'type' => 'document',
             'title' => 'Tugas baru diterima',
             'body' => "Anda mendapat tugas baru: {$indicator->judul}",
-            'link' => route('user.inbox'),
+            'link' => route('monitoring.saya'),
         ]);
     }
 }
@@ -121,7 +121,7 @@ class NotificationController extends Controller
                 'type' => 'document',
                 'title' => 'Laporan Anda telah dinilai',
                 'body' => "\"{$judul}\" {$statusLabel}. Nilai: {$result->nilai}.",
-                'link' => route('user.inbox'),
+                'link' => route('monitoring.saya'),
             ]);
         }
     }

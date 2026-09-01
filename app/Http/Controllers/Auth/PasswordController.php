@@ -20,9 +20,19 @@ class PasswordController extends Controller
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
+        // Dicek SEBELUM password di-update, supaya kita tahu apakah ini ganti
+        // password wajib (pertama kali login) atau sekadar ganti password biasa
+        // lewat halaman profil.
+        $iniGantiPasswordWajib = $request->user()->mustChangePassword();
+
         $request->user()->update([
             'password' => Hash::make($validated['password']),
+            'password_changed_at' => now(),
         ]);
+
+        if ($iniGantiPasswordWajib) {
+            return redirect()->route('dashboard')->with('status', 'password-updated');
+        }
 
         return back()->with('status', 'password-updated');
     }

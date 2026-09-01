@@ -1,6 +1,6 @@
 @php
     $menu = [
-        ['label' => 'Dokumen masuk', 'icon' => 'ti-inbox', 'route' => 'user.inbox'],
+        ['label' => 'Monitoring Kinerja', 'icon' => 'ti-chart-line', 'route' => 'monitoring.saya'],
     ];
 @endphp
 
