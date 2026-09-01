@@ -110,9 +110,6 @@
     @endforelse
 </div>
 
-<<<<<<< HEAD
-@endsection
-=======
 @push('scripts')
 <script>
     (function () {
@@ -160,4 +157,3 @@
 @endpush
 
 @endsection
->>>>>>> 99e40b150c528c51c17e3fc3aa26fb94f75ef9c6

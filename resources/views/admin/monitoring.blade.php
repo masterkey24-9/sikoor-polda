@@ -151,7 +151,6 @@
         </div>
 
         <div class="bg-white rounded-xl p-5 border border-slate-200">
-<<<<<<< HEAD
             <div class="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-3">
                 <i class="ti ti-circle-check text-lg"></i>
             </div>
@@ -440,10 +439,6 @@
                     @endforelse
                 </tbody>
             </table>
-=======
-            <p class="text-sm text-slate-500 mb-1">Kategori merah</p>
-            <p class="text-2xl font-display font-semibold text-red-600">{{ $totalPerluPerhatian ?? 0 }}</p>
->>>>>>> 99e40b150c528c51c17e3fc3aa26fb94f75ef9c6
         </div>
     </div>
 
@@ -467,7 +462,6 @@
         });
     }
 
-<<<<<<< HEAD
     // ===== 1) Trend Nilai IKPA Rata-rata — line chart dengan gradasi =====
     const trendLabels = @json(($trendBulanan ?? collect())->pluck('bulan'));
     const trendNilai = @json(($trendBulanan ?? collect())->pluck('nilai'));
@@ -611,70 +605,5 @@
     });
 </script>
 @endpush
-=======
-    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="bg-navy-950/[0.03] text-left text-slate-500 border-b border-slate-200">
-                    <th class="px-5 py-3 font-medium">Satker</th>
-                    <th class="px-5 py-3 font-medium">Nilai</th>
-                    <th class="px-5 py-3 font-medium">Status</th>
-                    <th class="px-5 py-3 font-medium">Progress</th>
-                    <th class="px-5 py-3 font-medium text-right">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($satkerPerformance ?? [] as $sp)
-                    @php
-                        $badgeClass = match ($sp->status) {
-                            'Hijau' => 'bg-emerald-50 text-emerald-700',
-                            'Kuning' => 'bg-amber-50 text-amber-700',
-                            'Merah' => 'bg-red-50 text-red-700',
-                            default => 'bg-slate-100 text-slate-500',
-                        };
-                        $barClass = match ($sp->status) {
-                            'Hijau' => 'bg-emerald-500',
-                            'Kuning' => 'bg-amber-500',
-                            'Merah' => 'bg-red-500',
-                            default => 'bg-slate-300',
-                        };
-                    @endphp
-                    <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                        <td class="px-5 py-3.5 text-slate-800 font-medium">{{ $sp->nama_satker }}</td>
-                        <td class="px-5 py-3.5">
-                            @if (!is_null($sp->nilai))
-                                <span class="font-medium text-navy-900">{{ $sp->nilai }}%</span>
-                                <span class="text-xs text-slate-400">({{ $sp->tugas_selesai }}/{{ $sp->total_tugas }} tugas)</span>
-                            @else
-                                <span class="text-slate-300">-</span>
-                            @endif
-                        </td>
-                        <td class="px-5 py-3.5">
-                            <span class="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full {{ $badgeClass }}">
-                                {{ $sp->status }}
-                            </span>
-                        </td>
-                        <td class="px-5 py-3.5">
-                            <div class="w-32 h-2 rounded-full bg-slate-100 overflow-hidden">
-                                <div class="h-full {{ $barClass }}" style="width: {{ $sp->nilai ?? 0 }}%"></div>
-                            </div>
-                        </td>
-                        <td class="px-5 py-3.5 text-right">
-                            <a href="{{ route('dashboard', ['satker_id' => $sp->id]) }}"
-                               class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-navy-900"
-                               aria-label="Lihat detail {{ $sp->nama_satker }}">
-                                <i class="ti ti-eye text-base"></i>
-                            </a>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-5 py-8 text-center text-slate-400">Belum ada data satker.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
->>>>>>> 99e40b150c528c51c17e3fc3aa26fb94f75ef9c6
 
 @endsection

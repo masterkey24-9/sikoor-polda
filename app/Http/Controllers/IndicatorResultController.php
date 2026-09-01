@@ -93,12 +93,6 @@ class IndicatorResultController extends Controller
             'tindak_lanjut' => 'nullable|string|max:1000',
         ]);
 
-        // Kalau admin tidak mengisi/mengubah kolom tindak lanjut, pakai saran
-        // otomatis berdasarkan kategori warna nilai (Hijau/Kuning/Merah).
-        if (empty($validated['tindak_lanjut'])) {
-            $validated['tindak_lanjut'] = IndicatorResult::suggestTindakLanjut($validated['nilai']);
-        }
-
         $result = IndicatorResult::findOrFail($id);
         $result->update($validated);
 
