@@ -58,10 +58,49 @@ Route::get('/dashboard', function () {
             return null;
         };
 
+<<<<<<< HEAD
         $satkerRingkas = \App\Models\Satker::orderBy('nama_satker')->get()
             ->map(function ($satker) use ($awal, $akhir, $hitungSkorSatker, $kategoriIkpa) {
                 $skor = $hitungSkorSatker($satker->id, $awal, $akhir);
                 $kategori = $kategoriIkpa($skor);
+=======
+                if ($periodeFilter) {
+                    $periode = \Carbon\Carbon::createFromFormat('Y-m', $periodeFilter);
+                    $tugasQuery->whereYear('periode', $periode->year)->whereMonth('periode', $periode->month);
+                }
+
+                $totalTugas = (clone $tugasQuery)->count();
+                $tugasSelesai = (clone $tugasQuery)->whereHas('results')->count();
+                $progres = $totalTugas > 0 ? ($tugasSelesai / $totalTugas) * 100 : null;
+
+                $rataKualitas = \App\Models\IndicatorResult::whereHas('indicator', function ($q) use ($satker, $periodeFilter) {
+                        $q->where('satker_id', $satker->id);
+                        if ($periodeFilter) {
+                            $periode = \Carbon\Carbon::createFromFormat('Y-m', $periodeFilter);
+                            $q->whereYear('periode', $periode->year)->whereMonth('periode', $periode->month);
+                        }
+                    })
+                    ->whereNotNull('nilai')
+                    ->avg('nilai');
+
+                $bobotProgres = config('sikoor.bobot_progres', 0.4);
+                $bobotKualitas = config('sikoor.bobot_kualitas', 0.6);
+
+                $skorAkhir = null;
+                if (! is_null($progres) && ! is_null($rataKualitas)) {
+                    $skorAkhir = round(($progres * $bobotProgres) + ($rataKualitas * $bobotKualitas), 1);
+                } elseif (! is_null($progres)) {
+                    // Belum ada laporan yang dinilai admin sama sekali, sementara pakai progres saja
+                    $skorAkhir = round($progres, 1);
+                }
+
+                $status = 'Belum ada tugas';
+                if (!is_null($skorAkhir)) {
+                    $ambangHijau = config('sikoor.ambang_hijau', 95);
+                    $ambangKuning = config('sikoor.ambang_kuning', 89);
+                    $status = $skorAkhir >= $ambangHijau ? 'Hijau' : ($skorAkhir >= $ambangKuning ? 'Kuning' : 'Merah');
+                }
+>>>>>>> 99e40b150c528c51c17e3fc3aa26fb94f75ef9c6
 
                 return (object) [
                     'nama_satker' => $satker->nama_satker,
@@ -117,11 +156,21 @@ Route::get('/dashboard', function () {
             ->values()
             ->take(5);
 
+<<<<<<< HEAD
         return view('admin.dashboard', compact(
             'totalSatker', 'rataRataKinerja', 'selisihBulanLalu',
             'totalSangatBaik', 'totalBaik', 'totalCukup', 'totalKurang', 'totalPerluPerhatian',
             'persenSangatBaik', 'persenPerluPerhatian', 'persenKurang',
             'trendMini', 'satkerPrioritasMini'
+=======
+        $totalSatker = $satkerPerformance->count();
+        $rataRataKinerja = $satkerPerformance->whereNotNull('nilai')->avg('nilai');
+        $totalPerluPerhatian = $satkerPerformance->where('status', 'Merah')->count();
+
+        return view('admin.monitoring', compact(
+            'indicators', 'satkers', 'satkerPerformance',
+            'totalSatker', 'rataRataKinerja', 'totalPerluPerhatian'
+>>>>>>> 99e40b150c528c51c17e3fc3aa26fb94f75ef9c6
         ));
     }
 
@@ -579,6 +628,10 @@ Route::get('/dashboard', function () {
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::get('/messages/data', [MessageController::class, 'data'])->name('messages.data');
     Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+    Route::get('/messages/online-status', [MessageController::class, 'onlineStatus'])->name('messages.onlineStatus');
+    Route::get('/messages/live-status', [MessageController::class, 'liveStatus'])->name('messages.liveStatus');
+    Route::post('/messages/typing', [MessageController::class, 'typing'])->name('messages.typing');
+    Route::post('/messages/broadcast', [MessageController::class, 'broadcastStore'])->name('messages.broadcast');
 
     // Status online & indikator "sedang mengetik" untuk Live chat (cache-based, polling).
     Route::post('/chat/heartbeat', [MessageController::class, 'heartbeat'])->name('chat.heartbeat');

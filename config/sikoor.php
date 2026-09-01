@@ -25,20 +25,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Ambang batas kategori status kinerja
+    | Ambang batas kategori warna kinerja satker
     |--------------------------------------------------------------------------
     |
-    | Skor akhir >= ambang_baik      => 'Baik'
-    | Skor akhir >= ambang_cukup     => 'Cukup'
-    | Skor akhir <  ambang_cukup     => 'Perlu Perhatian'
+    | Skor akhir >= ambang_hijau                    => 'Hijau'
+    | Skor akhir >= ambang_kuning (tapi < hijau)     => 'Kuning'
+    | Skor akhir <  ambang_kuning                    => 'Merah'
     |
     */
 
+<<<<<<< HEAD
     'ambang_baik' => 85,
     'ambang_cukup' => 60,
     'ikpa_ambang_sangat_baik' => 90,
     'ikpa_ambang_baik' => 80,
     'ikpa_ambang_cukup' => 70,
+=======
+    'ambang_hijau' => 95,
+    'ambang_kuning' => 89,
+>>>>>>> 99e40b150c528c51c17e3fc3aa26fb94f75ef9c6
 
     /*
     |--------------------------------------------------------------------------
