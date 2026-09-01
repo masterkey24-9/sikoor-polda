@@ -142,6 +142,8 @@ Route::get('/dashboard', function () {
         Route::get('/satkers', [SatkerController::class, 'index'])->name('satkers.index');
         Route::post('/satkers', [SatkerController::class, 'store'])->name('satkers.store');
         Route::delete('/satkers/{id}', [SatkerController::class, 'destroy'])->name('satkers.destroy');
+        Route::get('/satkers/cetak-kredensial', [SatkerController::class, 'cetakKredensialForm'])->name('satkers.cetakKredensialForm');
+        Route::post('/satkers/cetak-kredensial', [SatkerController::class, 'cetakKredensial'])->name('satkers.cetakKredensial');
 
         
         Route::get('/monitoring-ikpa', function () {
