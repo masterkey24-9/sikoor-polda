@@ -116,10 +116,10 @@
                      cocok dengan role akun di database (divalidasi di LoginRequest::authenticate). --}}
                 <div id="roleTabs" class="grid grid-cols-2 gap-1 p-1 rounded-lg bg-slate-100 mb-5">
                     <button type="button" data-role="admin"
-                            onclick="pilihRoleLogin('admin')"
-                            class="role-tab-btn h-9 rounded-md text-sm font-medium transition">
-                        Admin
-                    </button>
+        onclick="pilihRoleLogin('admin')"
+        class="role-tab-btn h-9 rounded-md text-sm font-medium transition">
+    <span id="roleTabLabelTombol">Admin</span>
+</button>
                     <button type="button" data-role="satker"
                             onclick="pilihRoleLogin('satker')"
                             class="role-tab-btn h-9 rounded-md text-sm font-medium transition">

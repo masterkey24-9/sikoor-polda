@@ -265,7 +265,6 @@
             </ul>
         </div>
 
-<<<<<<< HEAD
         <div class="bg-white rounded-xl p-5 border border-slate-200 flex flex-col">
             <p class="text-sm font-medium text-slate-700 mb-3">Satker Perlu Perhatian</p>
             <div class="space-y-2.5 flex-1">
@@ -285,7 +284,7 @@
                class="mt-4 pt-3 border-t border-slate-100 text-center text-xs font-medium text-navy-800 hover:underline">
                 Lihat Selengkapnya
             </a>
-=======
+
         <div id="prioritas" class="bg-white rounded-xl p-5 border border-slate-200 scroll-mt-6">
             <p class="text-sm font-medium text-slate-700">Daftar Satker Prioritas Pembinaan</p>
             <p class="text-[11px] text-slate-400 mb-3">Satker yang paling memerlukan perhatian, diurutkan dari prioritas tertinggi</p>
@@ -329,7 +328,7 @@
                     @endforelse
                 </tbody>
             </table>
->>>>>>> a1006c07f8ad677c344ec6c364a782fe2871152b
+
         </div>
 
     </div>
@@ -700,8 +699,5 @@
     });
 </script>
 @endpush
-<<<<<<< HEAD
-=======
 
 @endsection
->>>>>>> a1006c07f8ad677c344ec6c364a782fe2871152b

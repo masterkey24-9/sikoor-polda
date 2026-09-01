@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\IkpaIndikatorController;
 use App\Http\Controllers\IndicatorController;
 use App\Http\Controllers\IndicatorResultController;
 use App\Http\Controllers\MessageController;
@@ -218,6 +219,7 @@ Route::get('/dashboard', function () {
                 }
     
                 return (object) [
+                    'id' => $satker->id,
                     'nama_satker' => $satker->nama_satker,
                     'total_tugas' => $totalTugas,
                     'tugas_selesai' => $tugasSelesai,
@@ -268,7 +270,7 @@ Route::get('/dashboard', function () {
             })
             ->values()
             ->take(8);
-    
+        $satkerPrioritasMini = $satkerPrioritas->take(5);
         
         $labelPeriode = function (\Carbon\Carbon $awal) use ($granularitas) {
             return match ($granularitas) {
@@ -404,7 +406,7 @@ Route::get('/dashboard', function () {
             'totalSatker', 'rataRataKinerja', 'selisihBulanLalu', 'trendBulanan',
             'totalSangatBaik', 'totalBaik', 'totalCukup', 'totalKurang', 'totalPerluPerhatian',
             'persenSangatBaik', 'persenBaik', 'persenCukup', 'persenKurang', 'persenPerluPerhatian',
-            'satkerPrioritas', 'nilaiPerIndikator', 'earlyWarnings', 'satkerTerbaikHijau', 'satkerRankingHijau',
+            'satkerPrioritas', 'satkerPrioritasMini', 'nilaiPerIndikator', 'earlyWarnings', 'satkerTerbaikHijau', 'satkerRankingHijau',
             'tindakLanjutSelesai', 'tindakLanjutProses', 'tindakLanjutBelum', 'totalTindakLanjut'
         ));
     }
@@ -421,6 +423,8 @@ Route::middleware(['auth', 'password.change'])->group(function () {
         Route::post('/indicators', [IndicatorController::class, 'store'])->name('indicators.store');
         route::put('/indicators/{id}', [IndicatorController::class, 'update'])->name('indicators.update');
         Route::get('/indicators/{id}', [IndicatorController::class, 'show'])->name('indicators.show');
+        Route::get('/indicators/riwayat', [IndicatorController::class, 'riwayat'])->name('indicators.riwayat');
+        Route::get('/indicators/riwayat/{batchId}', [IndicatorController::class, 'riwayatDetail'])->name('indicators.riwayat.detail');
         Route::post('/indicator-results/{id}/nilai', [IndicatorResultController::class, 'updateStatus'])->name('indicator-results.updateStatus');
         Route::get('/satkers', [SatkerController::class, 'index'])->name('satkers.index');
         Route::post('/satkers', [SatkerController::class, 'store'])->name('satkers.store');
@@ -429,6 +433,9 @@ Route::middleware(['auth', 'password.change'])->group(function () {
         Route::post('/satkers/cetak-kredensial', [SatkerController::class, 'cetakKredensial'])->name('satkers.cetakKredensial');
         route::get('/satkers/{id}', [SatkerController::class, 'show'])->name('satkers.show');
         route::put('/satkers/{id}', [SatkerController::class, 'update'])->name('satkers.update');
+        Route::resource('ikpa-indikator', IkpaIndikatorController::class)
+    ->parameters(['ikpa-indikator' => 'ikpaIndikator'])
+    ->only(['index', 'store', 'update', 'destroy']);
         Route::get('/monitoring-ikpa', function () {
             $granularitas = in_array(request('granularitas'), ['bulanan', 'triwulan', 'semester', 'tahunan'])
                 ? request('granularitas')
@@ -566,11 +573,25 @@ Route::middleware(['auth', 'password.change'])->group(function () {
                     ];
                 })
                 ->values();
-
+        $tindakLanjutSelesai = 0;
+        $tindakLanjutProses = 0;
+        $tindakLanjutBelum = 0;
+        foreach ($indicators as $ind) {
+            $latestResult = $ind->results->sortByDesc('created_at')->first();
+            if (!$latestResult) {
+                $tindakLanjutBelum++;
+            } elseif ($latestResult->status === 'diterima') {
+                $tindakLanjutSelesai++;
+            } else {
+                $tindakLanjutProses++;
+            }
+        }
+        $totalTindakLanjut = $indicators->count();
             return view('admin.monitoring', compact(
-                'indicators', 'satkers', 'satkerPerformance',
-                'granularitas', 'periodeAktif', 'tahunAktif', 'triwulanAktif', 'semesterAktif', 'labelPeriodeAktif'
-            ));
+    'indicators', 'satkers', 'satkerPerformance',
+    'granularitas', 'periodeAktif', 'tahunAktif', 'triwulanAktif', 'semesterAktif', 'labelPeriodeAktif',
+    'tindakLanjutSelesai', 'tindakLanjutProses', 'tindakLanjutBelum', 'totalTindakLanjut'
+));
         })->name('monitoring.ikpa');
 
        
@@ -624,6 +645,20 @@ Route::middleware(['auth', 'password.change'])->group(function () {
 
             $rataRata = $baris->pluck('nilai')->filter()->avg();
 
+            $tindakLanjutSelesai = 0;
+$tindakLanjutProses = 0;
+$tindakLanjutBelum = 0;
+foreach ($indicators as $ind) {
+    $latestResult = $ind->results->sortByDesc('created_at')->first();
+    if (!$latestResult) {
+        $tindakLanjutBelum++;
+    } elseif ($latestResult->status === 'diterima') {
+        $tindakLanjutSelesai++;
+    } else {
+        $tindakLanjutProses++;
+    }
+}
+$totalTindakLanjut = $indicators->count();
             return view('admin.monitoring-cetak', compact('satker', 'baris', 'rataRata', 'labelPeriodeAktif'));
         })->name('monitoring.cetak');
 
@@ -895,17 +930,17 @@ Route::middleware(['auth', 'password.change'])->group(function () {
         $tindakLanjutSelesai = 0;
         $tindakLanjutProses = 0;
         $tindakLanjutBelum = 0;
-        foreach ($indicators as $ind) {
-            $latestResult = $ind->results->sortByDesc('created_at')->first();
-            if (! $latestResult) {
-                $tindakLanjutBelum++;
-            } elseif ($latestResult->status === 'diterima') {
-                $tindakLanjutSelesai++;
-            } else {
-                $tindakLanjutProses++;
-            }
-        }
-        $totalTindakLanjut = $indicators->count();
+foreach ($indicators as $ind) {
+    $latestResult = $ind->results->sortByDesc('created_at')->first();
+    if (!$latestResult) {
+        $tindakLanjutBelum++;
+    } elseif ($latestResult->status === 'diterima') {
+        $tindakLanjutSelesai++;
+    } else {
+        $tindakLanjutProses++;
+    }
+}
+$totalTindakLanjut = $indicators->count();
 
         return view('user.monitoring', compact(
             'satker', 'indicators', 'satkerPerformance',

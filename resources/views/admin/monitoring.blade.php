@@ -127,8 +127,6 @@
             &middot; <span class="font-medium text-slate-700">Semua satker</span>
         @endif
     </p>
-
-<<<<<<< HEAD
     {{-- ================= 1. KARTU RINGKASAN ================= --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
 
@@ -369,11 +367,9 @@
     <div id="tabel" class="bg-white rounded-xl border border-slate-200 p-5 scroll-mt-6">
         <p class="text-sm font-medium text-slate-700 mb-3">Peringkat Kinerja Satker</p>
         <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
-=======
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <p class="text-sm font-medium text-slate-700 mb-3">Monitoring IKPA Terbaru</p>
         <div class="overflow-x-auto max-h-[70vh] overflow-y-auto">
->>>>>>> a1006c07f8ad677c344ec6c364a782fe2871152b
             <table class="w-full text-sm min-w-[1180px]">
                 <thead class="sticky top-0 bg-white">
                     <tr class="text-xs text-slate-400 border-b border-slate-100">
